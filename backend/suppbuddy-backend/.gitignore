@@ -1,0 +1,17 @@
+# secrets
+.env
+
+# python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# runtime data (each person seeds their own; never commit scan data)
+data/suppbuddy.db
+data/*.db-journal
+
+# os/editor
+.DS_Store
+.vscode/
+.idea/

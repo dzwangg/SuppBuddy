@@ -1,0 +1,40 @@
+{
+  "_README": "Fallback references used when a product has fewer than min_fingerprint_n crowd scans. Ranges are PLACEHOLDER guesses from basic chemistry, NOT measured on our rig. TODO(calibrate): replace every range with mean +/- 3 std from 5+ real scans of a representative product per class, under the locked sample-prep protocol.",
+  "classes": [
+    {
+      "id": "b_complex",
+      "name": "B-complex / riboflavin-containing",
+      "keywords": ["riboflavin", "vitamin b2", "b-complex", "b complex", "b-2"],
+      "why": "Riboflavin is yellow: absorbs strongly in blue, little in red.",
+      "ranges": {"A_B": [0.15, 3.0], "ratio_BR": [2.0, 50.0]}
+    },
+    {
+      "id": "vitamin_c",
+      "name": "Vitamin C (ascorbic acid)",
+      "keywords": ["ascorbic acid", "vitamin c", "sodium ascorbate"],
+      "why": "Ascorbic acid dissolves clear and colorless and fast.",
+      "ranges": {"A_R": [-0.05, 0.08], "A_G": [-0.05, 0.08], "A_B": [-0.05, 0.12], "S_final": [0.8, 1.6]}
+    },
+    {
+      "id": "iron",
+      "name": "Iron supplement",
+      "keywords": ["iron", "ferrous", "ferric"],
+      "why": "Iron salts tint the solution and some forms (fumarate) dissolve poorly.",
+      "ranges": {"A_B": [0.05, 3.0]}
+    },
+    {
+      "id": "protein",
+      "name": "Protein powder",
+      "keywords": ["whey", "casein", "protein isolate", "pea protein"],
+      "why": "Protein dispersions are colloidal, so scatter is high.",
+      "ranges": {"S_final": [2.5, 60.0]}
+    },
+    {
+      "id": "melatonin",
+      "name": "Melatonin",
+      "keywords": ["melatonin"],
+      "why": "Doses are tiny (mg); signal is dominated by excipients. Expect near-clear.",
+      "ranges": {"A_G": [-0.05, 0.15], "S_final": [0.8, 3.0]}
+    }
+  ]
+}
