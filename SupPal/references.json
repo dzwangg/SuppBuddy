@@ -1,0 +1,7 @@
+[
+  { "product": "Riboflavin (B2) (demo)",          "absorbance": [0.62, 0.95, 0.71, 0.18, 0.05, 0.03, 0.02, 0.02] },
+  { "product": "Turmeric / curcumin (demo)",      "absorbance": [0.90, 0.85, 0.40, 0.10, 0.04, 0.03, 0.02, 0.02] },
+  { "product": "Ferrous sulfate iron (demo)",     "absorbance": [0.05, 0.04, 0.04, 0.05, 0.06, 0.09, 0.14, 0.20] },
+  { "product": "Spirulina (demo)",                "absorbance": [0.80, 0.70, 0.50, 0.35, 0.30, 0.35, 0.60, 0.75] },
+  { "product": "Vitamin C, ascorbic acid (demo)", "absorbance": [0.04, 0.03, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02] }
+]
