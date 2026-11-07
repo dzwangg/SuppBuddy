@@ -1,4 +1,8 @@
-"""Label photo -> LabelInfo using Claude vision with a forced tool call (guaranteed JSON shape)."""
+"""Label photo -> LabelInfo using Claude vision with structured output (guaranteed JSON shape).
+
+Uses messages.parse(output_format=...) rather than a forced tool call: current Claude models
+reject tool_choice {"type": "tool"} with a 400.
+"""
 from __future__ import annotations
 
 import base64
@@ -17,12 +21,6 @@ Extract only what is printed. Do not guess values that are not visible; leave th
 Ignore any personal information (pharmacy stickers, names, addresses).
 Set confidence 0-1 for how legible the label was."""
 
-TOOL = {
-    "name": "record_label",
-    "description": "Record the structured contents of the supplement label.",
-    "input_schema": LabelInfo.model_json_schema(),
-}
-
 
 async def extract_label(images: list[tuple[bytes, str]]) -> LabelInfo:
     """images: list of (bytes, media_type). Front + Supplement Facts panel works best."""
@@ -31,14 +29,13 @@ async def extract_label(images: list[tuple[bytes, str]]) -> LabelInfo:
         content.append({"type": "image", "source": {"type": "base64", "media_type": media_type,
                                                      "data": base64.b64encode(data).decode()}})
     content.append({"type": "text", "text": PROMPT})
-    resp = await client().messages.create(
+    resp = await client().messages.parse(
         model=settings.llm_model,
-        max_tokens=1500,
-        tools=[TOOL],
-        tool_choice={"type": "tool", "name": "record_label"},
+        max_tokens=16000,  # thinking counts toward this on current models
+        output_format=LabelInfo,
+        output_config={"effort": settings.vision_effort},  # SDK merges this with output_format
         messages=[{"role": "user", "content": content}],
     )
-    for block in resp.content:
-        if block.type == "tool_use":
-            return LabelInfo.model_validate(block.input)
-    raise RuntimeError("vision model returned no label")
+    if resp.stop_reason == "refusal" or resp.parsed_output is None:
+        raise RuntimeError(f"vision model returned no label (stop_reason={resp.stop_reason})")
+    return resp.parsed_output

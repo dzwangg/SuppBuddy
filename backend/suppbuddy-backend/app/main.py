@@ -76,8 +76,11 @@ async def extract_label(images: list[UploadFile] = File(...)):
     payload = []
     for f in images[:3]:
         payload.append((await f.read(), f.content_type or "image/jpeg"))
-    # TODO(mobile): iPhone photos are HEIC by default. Have the app send JPEG (UIImage.jpegData).
-    return await _extract(payload)
+    # The iOS app sends JPEG (UIImage.jpegData); HEIC isn't an accepted image type.
+    try:
+        return await _extract(payload)
+    except Exception as e:  # noqa: BLE001 - surface the reason to the app instead of a bare 500
+        raise HTTPException(502, f"label reading failed: {type(e).__name__}: {e}"[:300]) from e
 
 
 # ---------------------------------------------------------------------------

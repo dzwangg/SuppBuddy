@@ -1,0 +1,627 @@
+{
+ "id": "55a69310e56a",
+ "status": "complete",
+ "revision": 4,
+ "device_id": "sim-001",
+ "product_id": "demolabs|vitamin-c-1000",
+ "confirmed": false,
+ "synthetic": true,
+ "label": {
+  "brand": "DemoLabs",
+  "product_name": "Vitamin C 1000",
+  "form": null,
+  "serving_size": null,
+  "ingredients": [
+   {
+    "name": "Vitamin C (as ascorbic acid)",
+    "amount": 1000.0,
+    "unit": "mg"
+   }
+  ],
+  "other_ingredients": [],
+  "lot": null,
+  "upc": null,
+  "expiration": null,
+  "certifications": [],
+  "claims": [],
+  "confidence": null
+ },
+ "features": {
+  "A_R": 0.0878,
+  "A_G": 0.0876,
+  "A_B": 0.1217,
+  "ratio_BR": 1.386,
+  "ratio_GR": 0.9971,
+  "S_final": 4.5314,
+  "A_final": 0.0989,
+  "t50_s": 7.0,
+  "t90_s": 20.0,
+  "slope_max": 0.01992,
+  "plateau_noise": 0.00053,
+  "duration_s": 89.0
+ },
+ "qc": {
+  "ok": true,
+  "flags": [],
+  "warnings": [],
+  "series": {
+   "absorbance": [
+    [
+     0.0,
+     0.0005
+    ],
+    [
+     1.0,
+     0.0111
+    ],
+    [
+     3.0,
+     0.0291
+    ],
+    [
+     4.0,
+     0.0367
+    ],
+    [
+     6.0,
+     0.0493
+    ],
+    [
+     7.0,
+     0.0551
+    ],
+    [
+     9.0,
+     0.064
+    ],
+    [
+     10.0,
+     0.0683
+    ],
+    [
+     12.0,
+     0.0739
+    ],
+    [
+     13.0,
+     0.0777
+    ],
+    [
+     15.0,
+     0.0816
+    ],
+    [
+     16.0,
+     0.0833
+    ],
+    [
+     18.0,
+     0.087
+    ],
+    [
+     19.0,
+     0.0883
+    ],
+    [
+     21.0,
+     0.0897
+    ],
+    [
+     22.0,
+     0.0911
+    ],
+    [
+     24.0,
+     0.0922
+    ],
+    [
+     25.0,
+     0.0928
+    ],
+    [
+     27.0,
+     0.0942
+    ],
+    [
+     28.0,
+     0.0948
+    ],
+    [
+     30.0,
+     0.0963
+    ],
+    [
+     31.0,
+     0.0966
+    ],
+    [
+     33.0,
+     0.0967
+    ],
+    [
+     34.0,
+     0.0973
+    ],
+    [
+     36.0,
+     0.0973
+    ],
+    [
+     37.0,
+     0.0971
+    ],
+    [
+     39.0,
+     0.0972
+    ],
+    [
+     40.0,
+     0.0986
+    ],
+    [
+     42.0,
+     0.0984
+    ],
+    [
+     43.0,
+     0.098
+    ],
+    [
+     45.0,
+     0.0977
+    ],
+    [
+     46.0,
+     0.0985
+    ],
+    [
+     48.0,
+     0.0994
+    ],
+    [
+     49.0,
+     0.0986
+    ],
+    [
+     51.0,
+     0.0988
+    ],
+    [
+     52.0,
+     0.0981
+    ],
+    [
+     54.0,
+     0.0981
+    ],
+    [
+     55.0,
+     0.099
+    ],
+    [
+     57.0,
+     0.0994
+    ],
+    [
+     58.0,
+     0.0997
+    ],
+    [
+     60.0,
+     0.0988
+    ],
+    [
+     61.0,
+     0.0989
+    ],
+    [
+     63.0,
+     0.0992
+    ],
+    [
+     64.0,
+     0.0979
+    ],
+    [
+     66.0,
+     0.0989
+    ],
+    [
+     67.0,
+     0.0994
+    ],
+    [
+     69.0,
+     0.0991
+    ],
+    [
+     70.0,
+     0.0995
+    ],
+    [
+     72.0,
+     0.0997
+    ],
+    [
+     73.0,
+     0.0989
+    ],
+    [
+     75.0,
+     0.0995
+    ],
+    [
+     76.0,
+     0.099
+    ],
+    [
+     78.0,
+     0.0997
+    ],
+    [
+     79.0,
+     0.0988
+    ],
+    [
+     81.0,
+     0.0989
+    ],
+    [
+     82.0,
+     0.0986
+    ],
+    [
+     84.0,
+     0.0981
+    ],
+    [
+     85.0,
+     0.0993
+    ],
+    [
+     87.0,
+     0.0989
+    ],
+    [
+     89.0,
+     0.0999
+    ]
+   ],
+   "scatter": [
+    [
+     0.0,
+     0.9881
+    ],
+    [
+     1.0,
+     1.3747
+    ],
+    [
+     3.0,
+     2.0356
+    ],
+    [
+     4.0,
+     2.2881
+    ],
+    [
+     6.0,
+     2.7233
+    ],
+    [
+     7.0,
+     2.9717
+    ],
+    [
+     9.0,
+     3.2869
+    ],
+    [
+     10.0,
+     3.4036
+    ],
+    [
+     12.0,
+     3.6564
+    ],
+    [
+     13.0,
+     3.7406
+    ],
+    [
+     15.0,
+     3.9133
+    ],
+    [
+     16.0,
+     3.96
+    ],
+    [
+     18.0,
+     4.085
+    ],
+    [
+     19.0,
+     4.1425
+    ],
+    [
+     21.0,
+     4.2283
+    ],
+    [
+     22.0,
+     4.2575
+    ],
+    [
+     24.0,
+     4.3333
+    ],
+    [
+     25.0,
+     4.3419
+    ],
+    [
+     27.0,
+     4.3803
+    ],
+    [
+     28.0,
+     4.3775
+    ],
+    [
+     30.0,
+     4.435
+    ],
+    [
+     31.0,
+     4.4242
+    ],
+    [
+     33.0,
+     4.4428
+    ],
+    [
+     34.0,
+     4.4692
+    ],
+    [
+     36.0,
+     4.4817
+    ],
+    [
+     37.0,
+     4.4494
+    ],
+    [
+     39.0,
+     4.4772
+    ],
+    [
+     40.0,
+     4.4839
+    ],
+    [
+     42.0,
+     4.5086
+    ],
+    [
+     43.0,
+     4.4936
+    ],
+    [
+     45.0,
+     4.4989
+    ],
+    [
+     46.0,
+     4.5014
+    ],
+    [
+     48.0,
+     4.5097
+    ],
+    [
+     49.0,
+     4.5353
+    ],
+    [
+     51.0,
+     4.51
+    ],
+    [
+     52.0,
+     4.53
+    ],
+    [
+     54.0,
+     4.5142
+    ],
+    [
+     55.0,
+     4.5286
+    ],
+    [
+     57.0,
+     4.5156
+    ],
+    [
+     58.0,
+     4.5186
+    ],
+    [
+     60.0,
+     4.5464
+    ],
+    [
+     61.0,
+     4.5192
+    ],
+    [
+     63.0,
+     4.5044
+    ],
+    [
+     64.0,
+     4.5328
+    ],
+    [
+     66.0,
+     4.5211
+    ],
+    [
+     67.0,
+     4.5397
+    ],
+    [
+     69.0,
+     4.5392
+    ],
+    [
+     70.0,
+     4.5492
+    ],
+    [
+     72.0,
+     4.5356
+    ],
+    [
+     73.0,
+     4.5236
+    ],
+    [
+     75.0,
+     4.5317
+    ],
+    [
+     76.0,
+     4.5167
+    ],
+    [
+     78.0,
+     4.5183
+    ],
+    [
+     79.0,
+     4.5283
+    ],
+    [
+     81.0,
+     4.53
+    ],
+    [
+     82.0,
+     4.5403
+    ],
+    [
+     84.0,
+     4.5314
+    ],
+    [
+     85.0,
+     4.5206
+    ],
+    [
+     87.0,
+     4.5469
+    ],
+    [
+     89.0,
+     4.5344
+    ]
+   ]
+  }
+ },
+ "report": {
+  "verdict": "WARNING",
+  "headline": "Red flags found",
+  "summary": "Sensor check: inconsistent. Quality: poor. Public records: unknown for Vitamin C 1000. Reference data includes simulated demo scans.",
+  "accuracy": {
+   "label": "inconsistent",
+   "distance": 14.324,
+   "reference": "crowd",
+   "reference_n": 5,
+   "reference_synthetic": true,
+   "top_deviations": [
+    {
+     "feature": "S_final",
+     "z": 34.33,
+     "value": 4.5314,
+     "expected": 1.0983
+    },
+    {
+     "feature": "A_B",
+     "z": 4.6,
+     "value": 0.1217,
+     "expected": 0.0298
+    },
+    {
+     "feature": "A_R",
+     "z": 3.91,
+     "value": 0.0878,
+     "expected": 0.0096
+    }
+   ],
+   "note": "Compared with 5 confirmed scans of this product."
+  },
+  "quality": {
+   "label": "poor",
+   "issues": [
+    "Much cloudier than other scans of this product (z=34.3). Possible extra filler."
+   ],
+   "metrics": {
+    "S_final": 4.5314,
+    "t90_s": 20.0,
+    "plateau_noise": 0.00053
+   }
+  },
+  "reputability": {
+   "label": "unknown",
+   "score": null,
+   "findings": [
+    {
+     "type": "info",
+     "text": "No public records checked."
+    }
+   ]
+  },
+  "key_findings": [
+   "Compared with 5 confirmed scans of this product.",
+   "S_final is +34.3 std from the product's norm.",
+   "A_B is +4.6 std from the product's norm.",
+   "Much cloudier than other scans of this product (z=34.3). Possible extra filler."
+  ],
+  "advice": [
+   "Stop taking it until you've checked with a pharmacist or doctor.",
+   "Report the product to the FDA (MedWatch / Safety Reporting Portal)."
+  ],
+  "citations": [],
+  "disclaimer": "SuppBuddy compares your sample to other scans of the same product and to public safety records. It cannot confirm identity, purity, or dose like a certified lab can.",
+  "generated_by": "deterministic"
+ },
+ "stages": {
+  "features": {
+   "status": "ok"
+  },
+  "product": {
+   "status": "ok"
+  },
+  "deterministic": {
+   "status": "ok",
+   "tainted": "skipped (list empty; run scripts.import_tainted)",
+   "recalls": "skipped (offline, not cached)",
+   "caers": "skipped (offline, not cached)",
+   "dsld": "skipped (offline, not cached)",
+   "elapsed_s": 0.02
+  },
+  "agent": {
+   "status": "skipped",
+   "reason": "no ANTHROPIC_API_KEY"
+  }
+ },
+ "lcd": {
+  "code": "WARNING",
+  "line1": "WARNING         ",
+  "line2": "WARNING: see app"
+ },
+ "created_at": "2026-11-07T20:55:04.127525"
+}

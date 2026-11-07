@@ -1,2 +1,0 @@
-// Put ANTHROPIC_API_KEY in Secrets.xcconfig (gitignored). See Secrets.example.xcconfig.
-#include? "Secrets.xcconfig"

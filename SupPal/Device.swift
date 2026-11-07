@@ -1,12 +1,13 @@
 import CoreBluetooth
 import Observation
 
-/// The SupPal tester over BLE, using the Nordic UART Service (see README, "BLE contract").
-/// App writes "m"; tester notifies one line of comma-separated raw channel readings ending in "\n".
+/// The SupPal tester over BLE, using the Nordic UART Service and protocol v2 (README, "BLE contract").
+/// "b" -> dark + water-blank lines, "s" -> one sample line per second then "E", "L|..|.." -> tester screen.
 @MainActor @Observable
 final class Device: NSObject {
     var status = "Starting Bluetooth…"
     var isReady = false
+    var id = "sim-ios"
 
     static let service = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     static let rxUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E") // app -> tester
@@ -16,12 +17,14 @@ final class Device: NSObject {
     @ObservationIgnored private var peripheral: CBPeripheral?
     @ObservationIgnored private var rx: CBCharacteristic?
     @ObservationIgnored private var buffer = ""
-    @ObservationIgnored private var pending: CheckedContinuation<[Double], Error>?
-    @ObservationIgnored private var requestID = 0
+    @ObservationIgnored private var lines: AsyncThrowingStream<DeviceLine, Error>.Continuation?
+    @ObservationIgnored private var lastLine = Date()
+    @ObservationIgnored private var commandID = 0
 
     #if targetEnvironment(simulator)
-    // ponytail: the Simulator has no Bluetooth. Alternates blank/sample readings shaped like the riboflavin demo reference.
-    @ObservationIgnored private var mockCalls = 0
+    // ponytail: the Simulator has no Bluetooth, so the fake tester replays the backend's simulator
+    // (GET /dev/readings), alternating genuine and cornstarch-cut vitamin C to show both outcomes.
+    @ObservationIgnored private var runs = 0
 
     override init() {
         super.init()
@@ -29,40 +32,86 @@ final class Device: NSObject {
         isReady = true
     }
 
-    func measure() async throws -> [Double] {
-        try await Task.sleep(for: .milliseconds(400))
-        let blank: [Double] = [3100, 3400, 3650, 3900, 4100, 4000, 3800, 3500]
-        let a: [Double] = [0.61, 0.93, 0.72, 0.19, 0.05, 0.03, 0.02, 0.02]
-        defer { mockCalls += 1 }
-        return mockCalls % 2 == 0 ? blank : zip(blank, a).map { $0 * pow(10, -$1) }
+    func measureBlank() async throws -> (dark: Snapshot, blank: Snapshot) {
+        let r = try await Server.devReadings(profile: "vitamin_c")
+        guard let blank = r.blank["white"] else { throw AppError("Simulated readings had no blank.") }
+        return (r.dark, blank)
     }
+
+    func runSample(onSample: (Sample) -> Void) async throws -> [Sample] {
+        defer { runs += 1 }
+        let r = try await Server.devReadings(profile: runs % 2 == 0 ? "vitamin_c" : "vitamin_c_cornstarch")
+        for s in r.samples {
+            onSample(s)
+            try await Task.sleep(for: .milliseconds(40))
+        }
+        return r.samples
+    }
+
+    func show(_ lcd: Lcd) {}
     #else
     override init() {
         super.init()
         central = CBCentralManager(delegate: self, queue: nil)
     }
 
-    func measure() async throws -> [Double] {
+    /// Dark (LEDs off) and water-blank readings.
+    func measureBlank() async throws -> (dark: Snapshot, blank: Snapshot) {
+        var dark: Snapshot?, blank: Snapshot?
+        for try await line in try command("b") {
+            if case .dark(let d) = line { dark = d }
+            if case .blank(let b) = line { blank = b }
+            if let dark, let blank {
+                finish(nil)
+                return (dark, blank)
+            }
+        }
+        throw AppError("Tester didn't send a blank reading.")
+    }
+
+    /// One sample run (about a minute on the tester). Calls onSample as each reading arrives.
+    func runSample(onSample: (Sample) -> Void) async throws -> [Sample] {
+        var samples: [Sample] = []
+        for try await line in try command("s") {
+            if case .sample(let s) = line {
+                samples.append(s)
+                onSample(s)
+            }
+        }
+        return samples
+    }
+
+    /// Shows the verdict on the tester's screen.
+    func show(_ lcd: Lcd) {
+        guard let peripheral, let rx else { return }
+        let text = ["L", lcd.line1, lcd.line2].map { $0.trimmingCharacters(in: .whitespaces) }.joined(separator: "|")
+        peripheral.writeValue(Data(text.utf8), for: rx, type: rx.properties.contains(.write) ? .withResponse : .withoutResponse)
+    }
+
+    private func command(_ c: String) throws -> AsyncThrowingStream<DeviceLine, Error> {
         guard let peripheral, let rx else { throw AppError("Tester not connected.") }
-        guard pending == nil else { throw AppError("Already measuring.") }
-        requestID += 1
-        let id = requestID
-        Task {
-            try? await Task.sleep(for: .seconds(5))
-            if requestID == id { finish(.failure(AppError("Tester didn't answer within 5 s."))) }
+        guard lines == nil else { throw AppError("Tester is busy.") }
+        let (stream, continuation) = AsyncThrowingStream<DeviceLine, Error>.makeStream()
+        lines = continuation
+        buffer = ""
+        lastLine = .now
+        commandID += 1
+        let id = commandID
+        Task { // the tester sends a line at least every second while it works
+            while commandID == id, lines != nil {
+                try? await Task.sleep(for: .seconds(1))
+                if commandID == id, Date.now.timeIntervalSince(lastLine) > 5 { finish(AppError("Tester stopped responding.")) }
+            }
         }
-        return try await withCheckedThrowingContinuation { continuation in
-            pending = continuation
-            buffer = ""
-            peripheral.writeValue(Data("m".utf8), for: rx, type: rx.properties.contains(.write) ? .withResponse : .withoutResponse)
-        }
+        peripheral.writeValue(Data(c.utf8), for: rx, type: rx.properties.contains(.write) ? .withResponse : .withoutResponse)
+        return stream
     }
     #endif
 
-    private func finish(_ result: Result<[Double], Error>) {
-        let continuation = pending
-        pending = nil
-        continuation?.resume(with: result)
+    private func finish(_ error: Error?) {
+        let continuation = lines
+        lines = nil
+        if let error { continuation?.finish(throwing: error) } else { continuation?.finish() }
     }
 
     private func scan() {
@@ -74,7 +123,7 @@ final class Device: NSObject {
         peripheral = nil
         rx = nil
         isReady = false
-        finish(.failure(AppError("Tester disconnected.")))
+        finish(AppError("Tester disconnected."))
         scan()
     }
 }
@@ -98,6 +147,7 @@ extension Device: @preconcurrency CBCentralManagerDelegate, @preconcurrency CBPe
     }
 
     func centralManager(_ central: CBCentralManager, didConnect p: CBPeripheral) {
+        id = "esp32-" + (p.name ?? String(p.identifier.uuidString.prefix(8)))
         p.discoverServices([Self.service])
     }
 
@@ -121,7 +171,13 @@ extension Device: @preconcurrency CBCentralManagerDelegate, @preconcurrency CBPe
         guard let data = c.value, let chunk = String(data: data, encoding: .utf8) else { return }
         buffer += chunk
         for line in takeLines(&buffer) {
-            finish(parseReading(line).map { .success($0) } ?? .failure(AppError("Bad reading from tester: \(line)")))
+            lastLine = .now
+            guard let parsed = DeviceLine(line) else {
+                finish(AppError("Unexpected line from tester: \(line). Is it running protocol v2 firmware?"))
+                return
+            }
+            lines?.yield(parsed)
+            if parsed == .end { finish(nil) }
         }
     }
 }

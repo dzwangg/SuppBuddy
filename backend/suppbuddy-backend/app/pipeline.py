@@ -107,8 +107,12 @@ async def run_scan(scan_id: str) -> None:
     evidence: dict = {"tainted": None, "recalls": None, "caers": None, "dsld": None}
     stage2: dict = {}
     if label:
-        evidence["tainted"] = tainted.lookup(label.product_name, label.brand)
-        stage2["tainted"] = f"ok ({tainted.status()['rows']} rows loaded)"
+        rows = tainted.status()["rows"]
+        if rows:
+            evidence["tainted"] = tainted.lookup(label.product_name, label.brand)
+            stage2["tainted"] = f"ok ({rows} rows loaded)"
+        else:  # an empty list was never checked; counting it made unknown products score 70 "mixed"
+            stage2["tainted"] = "skipped (list empty; run scripts.import_tainted)"
         (rec, st_r), (cae, st_c), (ds, st_d) = await asyncio.gather(
             _guard(openfda.recalls(label.brand, label.product_name), settings.http_timeout_s + 2),
             _guard(openfda.caers(label.brand), settings.http_timeout_s + 2),

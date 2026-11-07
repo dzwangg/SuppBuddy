@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		143AC3D5CA663AA4F26B3B0D /* references.json in Resources */ = {isa = PBXBuildFile; fileRef = 7084CD2DFBA2D3B16D80799F /* references.json */; };
-		47A08CD349419CF0153FCF95 /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32A6012B803B73EA632A8D78 /* Agent.swift */; };
+		0C51085E3308FC41B14B6EF6 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD16D4694CB04A8E6F44DFB /* Server.swift */; };
 		5EA06355EDDB1104048F03E2 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E77487A5D6626598E0A85A3 /* Device.swift */; };
 		8783B7B1842C06349B8BB524 /* Analysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE44B472EE37F24B929F5495 /* Analysis.swift */; };
 		9F92975EF68DE3FB3B2B2CE7 /* SupPalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 221BC77247D4B18159CF26F9 /* SupPalApp.swift */; };
@@ -18,12 +17,10 @@
 
 /* Begin PBXFileReference section */
 		05F6BAC1BA4A85E628493599 /* NIH.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NIH.swift; sourceTree = "<group>"; };
-		1880E9EAB8CEEBF234DB116B /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		221BC77247D4B18159CF26F9 /* SupPalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupPalApp.swift; sourceTree = "<group>"; };
-		32A6012B803B73EA632A8D78 /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agent.swift; sourceTree = "<group>"; };
+		3AD16D4694CB04A8E6F44DFB /* Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
 		45656812968D6ED2C96B5092 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6E77487A5D6626598E0A85A3 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
-		7084CD2DFBA2D3B16D80799F /* references.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = references.json; sourceTree = "<group>"; };
 		A39B427DE46B24BCEC3BF29E /* SupPal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SupPal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1EC1880F7F33982FE5F6369 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FE44B472EE37F24B929F5495 /* Analysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analysis.swift; sourceTree = "<group>"; };
@@ -34,30 +31,19 @@
 			isa = PBXGroup;
 			children = (
 				BF0046E9E3EEFDF7F9AD1C1A /* SupPal */,
-				A05953C10EB17E83C3ED4FFB /* SupPal */,
 				E3C19C39FC30B59278770F69 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		A05953C10EB17E83C3ED4FFB /* SupPal */ = {
-			isa = PBXGroup;
-			children = (
-				1880E9EAB8CEEBF234DB116B /* Config.xcconfig */,
-			);
-			name = SupPal;
-			path = .;
 			sourceTree = "<group>";
 		};
 		BF0046E9E3EEFDF7F9AD1C1A /* SupPal */ = {
 			isa = PBXGroup;
 			children = (
-				32A6012B803B73EA632A8D78 /* Agent.swift */,
 				FE44B472EE37F24B929F5495 /* Analysis.swift */,
 				45656812968D6ED2C96B5092 /* ContentView.swift */,
 				6E77487A5D6626598E0A85A3 /* Device.swift */,
 				F1EC1880F7F33982FE5F6369 /* Info.plist */,
 				05F6BAC1BA4A85E628493599 /* NIH.swift */,
-				7084CD2DFBA2D3B16D80799F /* references.json */,
+				3AD16D4694CB04A8E6F44DFB /* Server.swift */,
 				221BC77247D4B18159CF26F9 /* SupPalApp.swift */,
 			);
 			path = SupPal;
@@ -79,7 +65,6 @@
 			buildConfigurationList = CA2974C7F131C2E5587067A2 /* Build configuration list for PBXNativeTarget "SupPal" */;
 			buildPhases = (
 				F11B19928519E49614211248 /* Sources */,
-				9D80129BBA569A79DD90FDFD /* Resources */,
 			);
 			buildRules = (
 			);
@@ -122,27 +107,16 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXResourcesBuildPhase section */
-		9D80129BBA569A79DD90FDFD /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				143AC3D5CA663AA4F26B3B0D /* references.json in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		F11B19928519E49614211248 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				47A08CD349419CF0153FCF95 /* Agent.swift in Sources */,
 				8783B7B1842C06349B8BB524 /* Analysis.swift in Sources */,
 				DBA0F58DE7C7EEF7F332DF27 /* ContentView.swift in Sources */,
 				5EA06355EDDB1104048F03E2 /* Device.swift in Sources */,
 				D06455CDB29D7495D2F3B325 /* NIH.swift in Sources */,
+				0C51085E3308FC41B14B6EF6 /* Server.swift in Sources */,
 				9F92975EF68DE3FB3B2B2CE7 /* SupPalApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -271,7 +245,6 @@
 		};
 		9E93AD271EB76D54A734D36E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1880E9EAB8CEEBF234DB116B /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
@@ -290,7 +263,6 @@
 		};
 		DCA802B5A85A178224515879 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1880E9EAB8CEEBF234DB116B /* Config.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";

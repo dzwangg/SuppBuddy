@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>AnthropicAPIKey</key>
-	<string>$(ANTHROPIC_API_KEY)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
@@ -20,10 +18,17 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>SupPal connects to your SupPal tester over Bluetooth.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>SupPal photographs the supplement label and scans its barcode to identify the product.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>SupPal sends test readings to the SupPal server running on your local network.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>SupPal saves report cards you choose to save to your photo library.</string>
 	<key>UILaunchScreen</key>

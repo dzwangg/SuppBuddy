@@ -77,6 +77,8 @@ def lcd_message(status: str, report: dict | None, width: int = 16) -> LcdMessage
     def fit(s: str) -> str:
         return s[:width].ljust(width)
 
+    if status == "error":  # pipeline crashed; without this the screen said "Analyzing..." forever
+        return LcdMessage(code="ERROR", line1=fit("Scan failed"), line2=fit("Retest sample"))
     if status in ("pending",) or not report:
         return LcdMessage(code="TESTING", line1=fit("SuppBuddy"), line2=fit("Analyzing..."))
     v = report["verdict"]
@@ -88,5 +90,5 @@ def lcd_message(status: str, report: dict | None, width: int = 16) -> LcdMessage
         "BAD_SCAN": "Retest sample",
     }.get(v, "See phone")
     score = report.get("reputability", {}).get("score")
-    line1 = f"{v[:9]}" + (f" R{score}" if score is not None else "")
+    line1 = v + (f" R{score}" if score is not None else "")  # "CONSISTENT R100" is 15 chars; fit() trims
     return LcdMessage(code=v, line1=fit(line1), line2=fit(line2))

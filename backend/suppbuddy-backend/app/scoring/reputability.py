@@ -10,9 +10,25 @@ TODO(calibrate): point weights are judgment calls. Keep them simple and explaina
 """
 from __future__ import annotations
 
+from datetime import date
+
 from app.schemas import LabelInfo, ReputabilityScore
 
 BASE = 70
+CLASS_POINTS = {"CLASS I": 35, "CLASS II": 20, "CLASS III": 8}
+# openFDA lists one record per size/SKU and keeps recalls forever. Counting every record at full
+# weight scored Nature Made 0/100 over 2013-2016 recalls. So: one penalty per recall event,
+# weighted by age, capped. A lot-number match is always added in full.
+MAX_RECALL_PENALTY = 40
+
+
+def _age_weight(report_date: str | None) -> float:
+    try:
+        d = date(int(report_date[:4]), int(report_date[4:6]), int(report_date[6:8]))
+    except (TypeError, ValueError):
+        return 1.0
+    years = (date.today() - d).days / 365.25
+    return 1.0 if years <= 2 else 0.5 if years <= 5 else 0.1
 
 
 def score_reputability(evidence: dict | None, label: LabelInfo | None) -> ReputabilityScore:
@@ -40,31 +56,39 @@ def score_reputability(evidence: dict | None, label: LabelInfo | None) -> Reputa
         })
 
     lot = (label.lot or "").strip().lower() if label else ""
+    events: dict = {}
     for r in evidence.get("recalls") or []:
-        cls = (r.get("classification") or "").upper()
-        pts = {"CLASS I": 35, "CLASS II": 20, "CLASS III": 8}.get(cls, 10)
-        lot_hit = bool(lot) and lot in (r.get("code_info") or "").lower()
+        events.setdefault(r.get("event_id") or (r.get("recalling_firm"), r.get("report_date")), []).append(r)
+    recall_penalty, lot_penalty = 0.0, 0
+    for recs in events.values():
+        classes = [(r.get("classification") or "").upper() for r in recs]
+        cls = min(classes, key=lambda c: list(CLASS_POINTS).index(c) if c in CLASS_POINTS else 9)
+        first = recs[0]
+        weight = _age_weight(first.get("report_date"))
+        lot_hit = bool(lot) and any(lot in (r.get("code_info") or "").lower() for r in recs)
+        recall_penalty += CLASS_POINTS.get(cls, 10) * weight
         if lot_hit:
-            pts += 30
+            lot_penalty += 30
             severe = severe or cls == "CLASS I"
-        score -= pts
+        severity = "high" if lot_hit or (cls == "CLASS I" and weight == 1.0) else "medium" if weight >= 0.5 else "low"
+        count = f", {len(recs)} products" if len(recs) > 1 else ""
         findings.append({
-            "type": "recall", "severity": "high" if lot_hit or cls == "CLASS I" else "medium",
-            "text": f"{cls.title() or 'Recall'} ({r.get('report_date', '?')}): {r.get('reason_for_recall', '')[:200]}"
+            "type": "recall", "severity": severity,
+            "text": f"{cls.title() or 'Recall'} ({first.get('report_date', '?')}{count}, {first.get('recalling_firm', '?')}): "
+                    f"{(first.get('reason_for_recall') or '')[:200]}"
                     + (" YOUR LOT NUMBER APPEARS IN THIS RECALL." if lot_hit else ""),
-            "recall_number": r.get("recall_number"),
+            "recall_number": first.get("recall_number"),
         })
+    score -= round(min(recall_penalty, MAX_RECALL_PENALTY)) + lot_penalty
 
     caers = evidence.get("caers")
     if caers and caers.get("total"):
         total, serious = caers["total"], caers.get("serious", 0)
-        # Counts, not rates: reporting is sparse and popular brands get more reports.
+        # Counts, not rates: popular brands get more reports, so this barely moves the score.
         if serious >= 25:
-            score -= 15
-        elif serious >= 5:
-            score -= 7
+            score -= 5
         findings.append({
-            "type": "adverse_events", "severity": "medium" if serious >= 5 else "low",
+            "type": "adverse_events", "severity": "low",
             "text": f"{total} FDA adverse-event reports mention this brand "
                     f"({serious} serious in the {caers.get('sample_size', 0)} most recent). "
                     "Reports are unverified and not proof the product caused harm.",
@@ -72,6 +96,11 @@ def score_reputability(evidence: dict | None, label: LabelInfo | None) -> Reputa
         })
 
     dsld = evidence.get("dsld")
+    if dsld and dsld.get("barcode_owner_mismatch"):
+        # The barcode on this bottle is registered to a different product: relabeled or counterfeit.
+        score -= 30
+        findings.append({"type": "barcode_mismatch", "severity": "high", "text": dsld["barcode_owner_mismatch"],
+                         "url": f"https://dsld.od.nih.gov/label/{dsld.get('dsld_id')}"})
     if dsld:
         if dsld.get("found"):
             score += 5

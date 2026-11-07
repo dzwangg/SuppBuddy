@@ -28,11 +28,16 @@ class Settings:
     # --- LLM (Claude) ---
     anthropic_api_key: str | None = os.getenv("ANTHROPIC_API_KEY") or None
     llm_model: str = os.getenv("LLM_MODEL", "claude-sonnet-5-5")
-    # Server-side web search tool. Set to "" to disable.
-    # TODO(verify-api): confirm the current web search tool type string in docs.claude.com.
-    web_search_tool_type: str = os.getenv("WEB_SEARCH_TOOL_TYPE", "web_search_20250305")
+    # Server-side web search tool. Set to "" to disable. 20260209 is the current version for
+    # Sonnet 5.5 / Opus 5.5 (built-in result filtering); older models need web_search_20250305.
+    web_search_tool_type: str = os.getenv("WEB_SEARCH_TOOL_TYPE", "web_search_20260209")
     agent_max_turns: int = int(os.getenv("AGENT_MAX_TURNS", "6"))
-    agent_timeout_s: float = float(os.getenv("AGENT_TIMEOUT_S", "60"))
+    # The agent only explains a verdict that's already set, so medium effort is plenty and keeps it fast.
+    agent_effort: str = os.getenv("AGENT_EFFORT", "medium")
+    # Copying text off a label needs little reasoning; the default (high) took about 60 s per photo.
+    vision_effort: str = os.getenv("VISION_EFFORT", "low")
+    # The phone shows the deterministic report within seconds; this only bounds the explanation.
+    agent_timeout_s: float = float(os.getenv("AGENT_TIMEOUT_S", "90"))
 
     # --- external evidence ---
     openfda_api_key: str | None = os.getenv("OPENFDA_API_KEY") or None  # optional, raises rate limit

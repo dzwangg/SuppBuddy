@@ -17,7 +17,7 @@ pip install -r requirements.txt
 cp .env.example .env            # add ANTHROPIC_API_KEY for vision + agent (optional)
 python -m scripts.seed_demo     # simulated reference scans so comparisons work today
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-pytest -q                       # 12 tests, no network or key needed
+pytest -q                       # 23 tests, no network or key needed
 ```
 
 Open http://localhost:8000/docs. Try `POST /dev/simulate?profile=vitamin_c_cornstarch` (should WARN)
@@ -90,16 +90,30 @@ Every assumption is tagged in code. `grep -rn "TODO(" app scripts data` lists th
 | `TODO(protocol)` | Akshay, Kevin | `app/sensors/features.py` | Which LED drives the scatter reading in sequential mode (assumed green). |
 | `TODO(hardware)` | Akshay, Kevin | `app/config.py`, `.env` | `TCS_SATURATION` / `TSL_SATURATION` from chosen gain + integration time (TCS max = min(65535, 1024 × cycles)). |
 | `TODO(hardware)` | David | `app/schemas.py` | Firmware should report gain/integration so mismatched scans can be rejected. |
-| `TODO(mobile)` | David | `app/main.py` | Send JPEG not HEIC to `/label/extract`. Poll `/scans/{id}` until `status=complete`; render as soon as `partial`. |
 | `TODO(lcd)` | Trevor | `app/scoring/verdict.py` `lcd_message` | Display size (16×2 assumed) and wording. Codes: `TESTING CONSISTENT CHECK WARNING NO_REF BAD_SCAN`. |
 | `TODO(calibrate)` | you, after scanning | `app/config.py` | z thresholds, `std_floor`, `turbidity_high`, `plateau_noise_high`. |
 | `TODO(calibrate)` | you | `data/class_references.json` | Replace guessed ranges with real mean ± 3 std per class. |
 | `TODO(calibrate)` | you | `scripts/seed_demo.py`, `app/sim.py` | Replace simulated seed scans with 5 real scans per demo product. |
 | `TODO(calibrate)` | you | `app/scoring/reputability.py` | Point weights for recalls/CAERS/tainted. |
-| `TODO(verify-api)` | you, 10 min in a browser | `app/evidence/dsld.py` | DSLD search route/shape. `/label/{id}` is solid; `/search-filter` is a best guess. |
-| `TODO(verify-api)` | you | `app/evidence/openfda.py` | CAERS supplement industry name; check with `count=products.industry_name.exact`. |
 | `TODO(verify-api)` | you | `scripts/import_tainted.py` | Download FDA's tainted supplements list and import it. **`data/tainted_supplements.csv` ships empty.** |
-| `TODO(verify-api)` | you | `app/config.py` | Current Claude web-search tool type string. |
+
+## Fixed 2026-11-07
+
+- `vision.py` and the agent's last-resort call forced `tool_choice`, which Claude Sonnet 5.5 / Opus 5.5 reject
+  with a 400 (label reading failed every time). Vision now uses `messages.parse(output_format=LabelInfo)`;
+  the agent is asked once more instead, then the deterministic report stands.
+- `max_tokens` 1500/2000 left too little room now that thinking is always on; now 16000. Agent effort is
+  `medium` (`AGENT_EFFORT`), timeout 90 s. Web search is `web_search_20260209`.
+- Recalls: openFDA lists one record per bottle size and keeps recalls forever, so Nature Made scored 0/100.
+  Now one penalty per recall event, weighted by age (full under 2 years, half under 5, then 10%), capped at
+  40; a lot-number match is still added in full. CAERS counts barely move the score (they scale with sales).
+- An empty tainted CSV counted as a checked source, so unknown products scored 70 "mixed"; now it's skipped.
+- NIH lookup by name accepted another brand's same-named product; the brand must match now. Lookup by
+  barcode (`label.upc`) is new, and a barcode registered to a different brand is a high-severity finding.
+- LCD: "CONSISTENT" was cut to "CONSISTEN"; a crashed scan showed "Analyzing..." forever.
+- `/label/extract` returns a 502 with the reason instead of a bare 500.
+
+The iOS app now sends exactly the device payload below (white LED mode, 60 one-second samples).
 
 ## Before the demo
 

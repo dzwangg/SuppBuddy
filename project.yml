@@ -8,16 +8,16 @@ targets:
     type: application
     platform: iOS
     sources: [SupPal]
-    configFiles:
-      Debug: Config.xcconfig
-      Release: Config.xcconfig
     info:
       path: SupPal/Info.plist
       properties:
-        AnthropicAPIKey: $(ANTHROPIC_API_KEY)
         NSBluetoothAlwaysUsageDescription: SupPal connects to your SupPal tester over Bluetooth.
         NSCameraUsageDescription: SupPal photographs the supplement label and scans its barcode to identify the product.
         NSPhotoLibraryAddUsageDescription: SupPal saves report cards you choose to save to your photo library.
+        NSLocalNetworkUsageDescription: SupPal sends test readings to the SupPal server running on your local network.
+        # Plain http only to local addresses (the laptop running the backend); everything else stays https.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
     settings:

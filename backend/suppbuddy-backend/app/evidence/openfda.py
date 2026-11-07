@@ -38,7 +38,7 @@ async def _get(path: str, search: str, limit: int) -> dict:
 async def recalls(brand: str | None, product: str | None = None, limit: int = 25) -> list[dict]:
     if not brand:
         return []
-    key = {"brand": brand, "product": product}
+    key = {"brand": brand, "product": product, "v": 2}  # v2: entries carry event_id
     if (hit := cache_get("fda_recalls", key)) is not None:
         return hit
     require_online("fda_recalls")
@@ -51,6 +51,7 @@ async def recalls(brand: str | None, product: str | None = None, limit: int = 25
     for r in data.get("results", []):
         desc = (r.get("product_description") or "").lower()
         out.append({
+            "event_id": r.get("event_id"),  # one recall event spans many records (one per size/SKU)
             "recall_number": r.get("recall_number"),
             "classification": r.get("classification"),
             "status": r.get("status"),

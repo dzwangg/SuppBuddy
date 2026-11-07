@@ -1,0 +1,93 @@
+{
+ "id": "c2bfc69ed67a",
+ "status": "complete",
+ "revision": 4,
+ "device_id": null,
+ "product_id": "nobody|mystery",
+ "confirmed": false,
+ "synthetic": false,
+ "label": {
+  "brand": "Nobody",
+  "product_name": "Mystery",
+  "form": null,
+  "serving_size": null,
+  "ingredients": [],
+  "other_ingredients": [],
+  "lot": null,
+  "upc": null,
+  "expiration": null,
+  "certifications": [],
+  "claims": [],
+  "confidence": null
+ },
+ "features": null,
+ "qc": null,
+ "report": {
+  "verdict": "NO_REF",
+  "headline": "Not enough reference data yet",
+  "summary": "Sensor check: not measured. Quality: unknown. Public records: unknown for Mystery.",
+  "accuracy": {
+   "label": "not_measured",
+   "distance": null,
+   "reference": "none",
+   "reference_n": 0,
+   "reference_synthetic": false,
+   "top_deviations": [],
+   "note": "No usable sensor reading."
+  },
+  "quality": {
+   "label": "unknown",
+   "issues": [
+    "No usable sensor reading."
+   ],
+   "metrics": {}
+  },
+  "reputability": {
+   "label": "unknown",
+   "score": null,
+   "findings": [
+    {
+     "type": "info",
+     "text": "No public records checked."
+    }
+   ]
+  },
+  "key_findings": [
+   "No usable sensor reading.",
+   "No usable sensor reading."
+  ],
+  "advice": [
+   "Confirm this scan so it becomes a reference for the next person."
+  ],
+  "citations": [],
+  "disclaimer": "SuppBuddy compares your sample to other scans of the same product and to public safety records. It cannot confirm identity, purity, or dose like a certified lab can.",
+  "generated_by": "deterministic"
+ },
+ "stages": {
+  "features": {
+   "status": "skipped",
+   "reason": "no readings"
+  },
+  "product": {
+   "status": "ok"
+  },
+  "deterministic": {
+   "status": "ok",
+   "tainted": "skipped (list empty; run scripts.import_tainted)",
+   "recalls": "skipped (offline, not cached)",
+   "caers": "skipped (offline, not cached)",
+   "dsld": "skipped (offline, not cached)",
+   "elapsed_s": 0.01
+  },
+  "agent": {
+   "status": "skipped",
+   "reason": "no ANTHROPIC_API_KEY"
+  }
+ },
+ "lcd": {
+  "code": "NO_REF",
+  "line1": "NO_REF          ",
+  "line2": "Need more data  "
+ },
+ "created_at": "2026-11-07T20:55:04.161958"
+}
