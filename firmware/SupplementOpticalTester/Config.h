@@ -33,7 +33,7 @@ namespace Config {
   constexpr uint8_t TCS_AVERAGE = 3;     // TCS34725 integrations averaged per reading
   constexpr uint16_t LED_SETTLE_MS = 5;  // LED output is stable within microseconds; this is margin
   constexpr uint16_t RUN_SECONDS = 30;   // length of a sample run
-  constexpr uint32_t PROMPT_TIMEOUT_MS = 60000;  // "Blank done"/"Run done" on the LCD revert to "Ready" after this
+  constexpr uint32_t PROMPT_TIMEOUT_MS = 60000;  // anything on the LCD (prompts, verdicts) reverts to "Ready" after this
   constexpr uint32_t SERIAL_BAUD = 115200;
   constexpr const char* BLE_NAME = "SuppBuddy";
 }
