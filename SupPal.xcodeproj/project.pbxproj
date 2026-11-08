@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0C51085E3308FC41B14B6EF6 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD16D4694CB04A8E6F44DFB /* Server.swift */; };
 		5EA06355EDDB1104048F03E2 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E77487A5D6626598E0A85A3 /* Device.swift */; };
+		85C5BD0AA0DAEEF807E69D25 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 915395601AD0F3D8779810B1 /* Assets.xcassets */; };
 		8783B7B1842C06349B8BB524 /* Analysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE44B472EE37F24B929F5495 /* Analysis.swift */; };
 		9F92975EF68DE3FB3B2B2CE7 /* SupPalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 221BC77247D4B18159CF26F9 /* SupPalApp.swift */; };
 		D06455CDB29D7495D2F3B325 /* NIH.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F6BAC1BA4A85E628493599 /* NIH.swift */; };
@@ -21,6 +22,7 @@
 		3AD16D4694CB04A8E6F44DFB /* Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
 		45656812968D6ED2C96B5092 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6E77487A5D6626598E0A85A3 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
+		915395601AD0F3D8779810B1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A39B427DE46B24BCEC3BF29E /* SupPal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SupPal.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F1EC1880F7F33982FE5F6369 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FE44B472EE37F24B929F5495 /* Analysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analysis.swift; sourceTree = "<group>"; };
@@ -39,6 +41,7 @@
 			isa = PBXGroup;
 			children = (
 				FE44B472EE37F24B929F5495 /* Analysis.swift */,
+				915395601AD0F3D8779810B1 /* Assets.xcassets */,
 				45656812968D6ED2C96B5092 /* ContentView.swift */,
 				6E77487A5D6626598E0A85A3 /* Device.swift */,
 				F1EC1880F7F33982FE5F6369 /* Info.plist */,
@@ -65,6 +68,7 @@
 			buildConfigurationList = CA2974C7F131C2E5587067A2 /* Build configuration list for PBXNativeTarget "SupPal" */;
 			buildPhases = (
 				F11B19928519E49614211248 /* Sources */,
+				9D80129BBA569A79DD90FDFD /* Resources */,
 			);
 			buildRules = (
 			);
@@ -106,6 +110,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9D80129BBA569A79DD90FDFD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				85C5BD0AA0DAEEF807E69D25 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		F11B19928519E49614211248 /* Sources */ = {
