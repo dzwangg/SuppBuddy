@@ -12,6 +12,10 @@ namespace Config {
   constexpr uint8_t LUX_SDA = 16;  // TSL2591: 90 degrees to the beam (scattered light)
   constexpr uint8_t LUX_SCL = 17;
 
+  // TCS34725 breakout's LED pin. Its white illumination LED is ON unless this pin is pulled low,
+  // and it sits millimeters from the sensor, so the firmware holds it LOW (off) the whole time.
+  constexpr uint8_t TCS_LED_PIN = 4;
+
   // Each LED: GPIO -> its own 330 ohm resistor -> LED anode; cathode -> GND.
   // As wired on the main board.
   constexpr uint8_t LED_WHITE = 27;

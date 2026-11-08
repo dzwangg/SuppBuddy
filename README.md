@@ -69,7 +69,7 @@ Pins are defined in `firmware/SupplementOpticalTester/Config.h`; this table must
 | Part | ESP32 pin | Notes |
 |---|---|---|
 | TCS34725 SDA / SCL | 21 / 22 | In line behind the cuvette (transmitted light). I²C bus 0 |
-| TCS34725 LED pin | GND | Keeps its white illumination LED off |
+| TCS34725 LED pin | 4 | The firmware holds it LOW so the board's white illumination LED stays off (tying it to GND also works) |
 | TSL2591 SDA / SCL | 16 / 17 | 90° to the beam (scattered light). I²C bus 1, because both sensors use address 0x29 |
 | Both sensors VIN / GND | 3V3 / GND | |
 | White LED | 27 | Each LED: GPIO → its own 330 Ω resistor → LED (long leg) → GND |

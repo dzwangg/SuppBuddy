@@ -36,6 +36,9 @@ void help() {
 void status() {
   Serial.print("TCS34725 on GPIO 21/22: ");
   Serial.println(rgb.available() ? "DETECTED" : "NOT DETECTED");
+  Serial.print("TCS34725 white LED: held off by GPIO ");
+  Serial.print(Config::TCS_LED_PIN);
+  Serial.println(" (wire the board's LED pin there; if it still glows, check that wire)");
   Serial.print("TSL2591 on GPIO 16/17: ");
   Serial.println(lux.available() ? "DETECTED" : "NOT DETECTED");
   Serial.print("LCD on GPIO 21/22: ");
@@ -131,6 +134,7 @@ void setup() {
   Serial.begin(Config::SERIAL_BAUD);
   Serial.setTimeout(75);
   delay(300);
+  RGBSensor::ledOff();  // first thing: the sensor board's white LED is on until this pin goes low
   leds.begin();
 
   Wire.begin(Config::RGB_SDA, Config::RGB_SCL);

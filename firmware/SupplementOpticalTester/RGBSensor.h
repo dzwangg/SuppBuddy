@@ -14,8 +14,9 @@ struct RGBReading {
 class RGBSensor {
  public:
   RGBSensor();
-  bool begin(TwoWire& bus);
+  bool begin(TwoWire& bus);  // also turns the breakout's white LED off
   bool available() const { return ready_; }
+  static void ledOff();       // drives the breakout's LED pin (Config::TCS_LED_PIN) LOW
   // Still answering on the bus. A sensor that drops off mid-run (loose wire, power dip) doesn't fail a
   // read: the driver returns stale register contents, which look like a real, very dark sample.
   bool alive();
