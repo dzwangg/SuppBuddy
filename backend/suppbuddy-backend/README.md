@@ -17,13 +17,16 @@ pip install -r requirements.txt
 cp .env.example .env            # add ANTHROPIC_API_KEY for vision + agent (optional)
 python -m scripts.seed_demo     # simulated reference scans so comparisons work today
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-pytest -q                       # 36 tests, no network or key needed
+pytest -q                       # 51 tests, no network or key needed
 ```
 
 Open http://localhost:8000/docs. Try `POST /dev/simulate?profile=vitamin_c_cornstarch` (should WARN)
 vs `profile=vitamin_c` (should be CONSISTENT).
 
-For the phone to reach your laptop on the same wifi use your LAN IP, or `ngrok http 8000`.
+For the phone to reach your laptop on the same wifi use your LAN IP, or `ngrok http 8000`. Before the server is
+reachable beyond your own machine, set `API_TOKEN` in `.env` and enter the same value under Settings > API token
+in the app: every endpoint can spend Claude credits or feed the crowd reference, and without a token anyone who
+can reach the port can call them.
 
 ## Hosting it online (Railway)
 

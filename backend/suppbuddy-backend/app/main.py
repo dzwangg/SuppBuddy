@@ -4,8 +4,11 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, HTTPException, Query, UploadFile
+from fastapi import Depends, FastAPI, File, Header, HTTPException, Query, UploadFile
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 
 from app import llm, pipeline, sim
@@ -23,12 +26,29 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     init_db()
+    swept = pipeline.sweep_stale()
+    if swept:
+        logging.getLogger("suppbuddy").warning("settled %d scan(s) left mid-run by the previous process", swept)
     yield
 
 
-app = FastAPI(title="SuppBuddy API", version="0.1.0", lifespan=lifespan)
+def require_token(authorization: str | None = Header(None)) -> None:
+    """One shared token from .env (API_TOKEN). Unset = open, for the Simulator against localhost. Set it before
+    the server is reachable beyond your laptop: every endpoint can spend Claude credits or feed the crowd data."""
+    if settings.api_token and authorization != f"Bearer {settings.api_token}":
+        raise HTTPException(401, "missing or wrong API token (Settings > API token in the app)")
+
+
+app = FastAPI(title="SuppBuddy API", version="0.1.0", lifespan=lifespan, dependencies=[Depends(require_token)])
 # TODO(mobile): lock origins down if you ship a web client; native iOS doesn't need CORS.
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(_, exc: RequestValidationError) -> JSONResponse:
+    # The default handler echoes the rejected input; a NaN there can't be serialized and turns the 422 into a 500.
+    return JSONResponse(status_code=422,
+                        content={"detail": jsonable_encoder([{k: v for k, v in e.items() if k != "input"} for e in exc.errors()])})
 
 
 def envelope(scan: Scan) -> dict:
@@ -76,6 +96,8 @@ async def extract_label(images: list[UploadFile] = File(...)):
     from app.vision import extract_label as _extract
     payload = []
     for f in images[:3]:
+        if (f.size or 0) > 8_000_000:  # read() would hold it all in memory; the API rejects >5 MB images anyway
+            raise HTTPException(413, "each photo must be under 8 MB")
         payload.append((await f.read(), f.content_type or "image/jpeg"))
     # The iOS app sends JPEG (UIImage.jpegData); HEIC isn't an accepted image type.
     try:

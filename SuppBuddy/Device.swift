@@ -11,6 +11,7 @@ final class Device: NSObject {
     var isReady = false
     var id = "sim-ios"
 
+    static let testerName = "SuppBuddy" // what the firmware and the stub advertise (Config::BLE_NAME)
     static let service = CBUUID(string: "6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     static let rxUUID = CBUUID(string: "6E400002-B5A3-F393-E0A9-E50E24DCCA9E") // app -> tester
     static let txUUID = CBUUID(string: "6E400003-B5A3-F393-E0A9-E50E24DCCA9E") // tester -> app
@@ -84,6 +85,7 @@ final class Device: NSObject {
             case .sample(let s):
                 samples.append(s)
                 onSample(s)
+                if samples.count > 400 { finish(AppError("The tester sent far more readings than a run should. Check its firmware.")) } // a run is ~110
             case .failure(let message): throw AppError(message)
             default: break
             }
@@ -107,10 +109,13 @@ final class Device: NSObject {
         lastLine = .now
         commandID += 1
         let id = commandID
-        Task { // the tester sends a line at least every second while it works
+        let started = Date.now
+        Task { // the tester sends a line at least every second while it works, and a run takes 30 s
             while commandID == id, lines != nil {
                 try? await Task.sleep(for: .seconds(1))
-                if commandID == id, Date.now.timeIntervalSince(lastLine) > 5 { finish(AppError("Tester stopped responding.")) }
+                guard commandID == id else { break }
+                if Date.now.timeIntervalSince(lastLine) > 5 { finish(AppError("Tester stopped responding.")) }
+                else if Date.now.timeIntervalSince(started) > 120 { finish(AppError("The tester didn't finish. Reset it and try again.")) }
             }
         }
         peripheral.writeValue(Data(c.utf8), for: rx, type: rx.properties.contains(.write) ? .withResponse : .withoutResponse)
@@ -149,6 +154,8 @@ extension Device: @preconcurrency CBCentralManagerDelegate, @preconcurrency CBPe
     }
 
     func centralManager(_ central: CBCentralManager, didDiscover p: CBPeripheral, advertisementData: [String: Any], rssi: NSNumber) {
+        // Many ESP32 projects advertise the same Nordic UART service; only take a board that says it's ours.
+        guard ((advertisementData[CBAdvertisementDataLocalNameKey] as? String) ?? p.name) == Self.testerName else { return }
         central.stopScan()
         peripheral = p
         p.delegate = self
@@ -179,6 +186,7 @@ extension Device: @preconcurrency CBCentralManagerDelegate, @preconcurrency CBPe
 
     func peripheral(_ p: CBPeripheral, didUpdateValueFor c: CBCharacteristic, error: Error?) {
         guard let data = c.value, let chunk = String(data: data, encoding: .utf8) else { return }
+        if buffer.utf8.count > 4096 { buffer = "" } // a device that never sends a newline must not grow this forever
         buffer += chunk
         for line in takeLines(&buffer) {
             lastLine = .now

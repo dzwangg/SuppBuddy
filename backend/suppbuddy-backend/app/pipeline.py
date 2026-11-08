@@ -18,6 +18,7 @@ from app import llm
 from app.agent.harness import run_agent
 from app.config import settings
 from app.db import Scan, session
+from sqlalchemy import select
 from app.evidence import dsld, openfda, tainted
 from app.evidence.cache import OfflineMiss
 from app.fingerprints import fingerprint_stats, get_fingerprint, get_or_create_product
@@ -143,30 +144,46 @@ async def run_scan(scan_id: str) -> None:
         reason = "no ANTHROPIC_API_KEY" if not llm.available() else "bad scan"
         _patch(scan_id, ("agent", {"status": "skipped", "reason": reason}), status="complete")
         return
-    context = {
+    context = {  # the verdict first: the harness truncates this, and the label is client-supplied
+        "deterministic_report": report.model_dump(mode="json"),
         "label": label.model_dump() if label else None,
         "sensor_features": features,
         "qc": {k: v for k, v in (qc or {}).items() if k != "series"},
         "crowd_fingerprint": {"n": fp_n, "synthetic": fp_syn, "stats": fp_stats},
-        "deterministic_report": report.model_dump(mode="json"),
         "evidence_pack": evidence,
     }
     try:
-        narrative = await run_agent(context)
-        merged = report.model_copy(update={
-            "headline": narrative.get("headline") or report.headline,
-            "summary": narrative.get("summary") or report.summary,
-            "key_findings": narrative.get("key_findings") or report.key_findings,
-            "advice": narrative.get("advice") or report.advice,
-            "citations": report.citations + [Citation.model_validate(c) for c in narrative.get("citations", [])],
-            "generated_by": "agent",
-        })
+        merged = report.model_copy(update=_narrative(await run_agent(context), report))
         _patch(scan_id, ("agent", {"status": "ok", "elapsed_s": round(time.monotonic() - t0, 2)}),
                report=Report.model_validate(merged.model_dump()).model_dump(mode="json"), status="complete")
     except Exception as e:  # noqa: BLE001
         log.warning("agent failed: %s", e)
         _patch(scan_id, ("agent", {"status": "unavailable", "error": f"{type(e).__name__}: {e}"[:300]}),
                status="complete")
+
+
+def _narrative(raw: dict, report: Report) -> dict:
+    """Keep what the agent wrote where it is well-formed; the deterministic text is the fallback per field.
+    Findings and advice carry the safety text (recalls, "stop taking it"), so they stay first and the agent
+    can only add to them. A bad citation drops that citation, not the write-up."""
+    def text(key: str, limit: int) -> str | None:
+        v = raw.get(key)
+        return v.strip()[:limit] if isinstance(v, str) and v.strip() else None
+
+    def items(key: str, n: int) -> list[str]:
+        v = raw.get(key)
+        return [x.strip()[:300] for x in v if isinstance(x, str) and x.strip()][:n] if isinstance(v, list) else []
+
+    cites = [Citation.model_validate({k: c[k] for k in ("source", "title", "url") if isinstance(c.get(k), str)})
+             for c in (raw.get("citations") or []) if isinstance(c, dict) and isinstance(c.get("source"), str)]
+    return {
+        "headline": text("headline", 120) or report.headline,
+        "summary": text("summary", 800) or report.summary,
+        "key_findings": (report.key_findings + items("key_findings", 6))[:10],
+        "advice": (report.advice + items("advice", 2))[:6],
+        "citations": report.citations + cites,
+        "generated_by": "agent",
+    }
 
 
 def start(scan_id: str) -> None:
@@ -176,12 +193,36 @@ def start(scan_id: str) -> None:
         old.cancel()
     task = asyncio.create_task(_run_safely(scan_id))
     _running[scan_id] = task
-    task.add_done_callback(lambda _: _running.pop(scan_id, None))
+    # only forget *this* task: the cancelled predecessor's callback must not drop its replacement
+    task.add_done_callback(lambda t: _running.pop(scan_id, None) if _running.get(scan_id) is t else None)
+
+
+def _settle(scan_id: str, why: str) -> None:
+    """A run that won't finish: keep the measured verdict if there is one, otherwise mark the scan failed."""
+    with session() as s:
+        scan = s.get(Scan, scan_id)
+        if scan and scan.status in ("pending", "partial"):
+            scan.status = "complete" if scan.report else "error"
+            scan.stages = {**(scan.stages or {}), "pipeline": {"status": "error", "error": why}}
+            scan.revision = (scan.revision or 0) + 1
+
+
+def sweep_stale() -> int:
+    """At startup: scans a previous process left mid-run would otherwise show "Analyzing..." forever."""
+    with session() as s:
+        ids = list(s.scalars(select(Scan.id).where(Scan.status.in_(("pending", "partial")))))
+    for scan_id in ids:
+        _settle(scan_id, "server restarted mid-scan")
+    return len(ids)
 
 
 async def _run_safely(scan_id: str) -> None:
     try:
         await run_scan(scan_id)
+    except asyncio.CancelledError:
+        if _running.get(scan_id) is asyncio.current_task():  # shutdown, not a rerun replacing us
+            _settle(scan_id, "cancelled")
+        raise
     except Exception as e:  # noqa: BLE001
         log.exception("pipeline crashed")
-        _patch(scan_id, ("pipeline", {"status": "error", "error": str(e)[:300]}), status="error")
+        _patch(scan_id, ("pipeline", {"status": "error", "error": type(e).__name__}), status="error")

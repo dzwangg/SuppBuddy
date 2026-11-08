@@ -162,7 +162,13 @@ void loop() {
   }
   String text;
   char command = ble.takeCommand(text);
-  if (command) handle(command, text, true);
+  if (command) {
+    handle(command, text, true);
+    // A command that arrived while that ran (a retry after the phone gave up, a Serial Monitor key) would
+    // start a run nobody is listening to, and its lines would land in the app's next command.
+    if (ble.takeCommand(text)) Serial.println("Ignored a command sent while the tester was busy.");
+    while (Serial.available()) Serial.read();
+  }
   readSerial();
   delay(5);
 }

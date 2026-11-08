@@ -5,9 +5,14 @@ If the firmware sends something different, change it HERE first; everything else
 from __future__ import annotations
 
 from enum import Enum
-from typing import Literal
+from typing import Annotated, Literal
+from urllib.parse import urlparse
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+# Bounds at the trust boundary: the phone and any other client post these as-is.
+Short = Annotated[str, Field(max_length=300)]
+FINITE = ConfigDict(allow_inf_nan=False)  # NaN/Infinity pass every QC comparison and break JSON responses
 
 
 # ---------------------------------------------------------------------------
@@ -16,6 +21,7 @@ from pydantic import BaseModel, Field
 class ChannelSnapshot(BaseModel):
     """One averaged reading of both sensors. TCS34725 (in line) gives r,g,b,c; TSL2591 (90 deg) gives
     scatter (its full-spectrum channel) and ir (its infrared-only channel)."""
+    model_config = FINITE
     r: float
     g: float
     b: float
@@ -25,6 +31,7 @@ class ChannelSnapshot(BaseModel):
 
 
 class RawSample(BaseModel):
+    model_config = FINITE
     t_ms: int = Field(..., description="ms since the sample run started")
     r: float
     g: float
@@ -39,8 +46,8 @@ class RawSample(BaseModel):
 
 
 class DeviceReadings(BaseModel):
-    device_id: str
-    protocol: str = "v1"
+    device_id: str = Field(max_length=64)
+    protocol: str = Field("v1", max_length=16)
     # "white": every sample has the white light on; read the r/g/b sensor channels.
     # "sequential_rgb": each sample has one colored LED on; use the matching sensor channel.
     # "cycle" (protocol v3): every ~1.4 s the tester takes a dark reading, then one reading each under
@@ -55,8 +62,8 @@ class DeviceReadings(BaseModel):
     tsl_integration_ms: float | None = None
     dark: ChannelSnapshot  # LEDs off, taken with the blank
     # Water blank, keyed by LED: "white" in white mode, "r"/"g"/"b" in sequential mode, all four in cycle mode
-    blank: dict[str, ChannelSnapshot]
-    samples: list[RawSample]
+    blank: dict[str, ChannelSnapshot] = Field(min_length=1)
+    samples: list[RawSample] = Field(max_length=5000)
 
 
 class SamplePrep(BaseModel):
@@ -74,26 +81,26 @@ class SamplePrep(BaseModel):
 # Label (photo -> vision -> structured)
 # ---------------------------------------------------------------------------
 class LabelIngredient(BaseModel):
-    name: str
+    name: Short
     amount: float | None = None
-    unit: str | None = None
+    unit: Short | None = None
 
 
 class LabelInfo(BaseModel):
-    brand: str | None = None
-    product_name: str | None = None
+    brand: Short | None = None
+    product_name: Short | None = None
     # Part of the product identity when there's no barcode: chocolate and vanilla of one product
     # look completely different to the sensors, so they need separate references.
-    flavor: str | None = None
-    form: str | None = None  # capsule, tablet, powder...
-    serving_size: str | None = None
-    ingredients: list[LabelIngredient] = []
-    other_ingredients: list[str] = []
-    lot: str | None = None
-    upc: str | None = None
-    expiration: str | None = None
-    certifications: list[str] = []  # e.g. "USP Verified", "NSF Certified for Sport" as printed
-    claims: list[str] = []          # marketing claims as printed
+    flavor: Short | None = None
+    form: Short | None = None  # capsule, tablet, powder...
+    serving_size: Short | None = None
+    ingredients: list[LabelIngredient] = Field(default_factory=list, max_length=80)
+    other_ingredients: list[Short] = Field(default_factory=list, max_length=80)
+    lot: Short | None = None
+    upc: Short | None = None
+    expiration: Short | None = None
+    certifications: list[Short] = Field(default_factory=list, max_length=40)  # e.g. "USP Verified" as printed
+    claims: list[Short] = Field(default_factory=list, max_length=40)          # marketing claims as printed
     confidence: float | None = None  # model's self-reported 0-1
 
 
@@ -153,6 +160,15 @@ class Citation(BaseModel):
     source: str
     title: str | None = None
     url: str | None = None
+
+    @field_validator("url")
+    @classmethod
+    def _web_only(cls, v: str | None) -> str | None:
+        """The app renders these as tappable links and the agent can cite anything: keep http(s) with a host."""
+        if v is None:
+            return None
+        u = urlparse(v.strip())
+        return v.strip() if u.scheme in ("http", "https") and u.netloc else None
 
 
 class Report(BaseModel):

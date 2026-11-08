@@ -49,16 +49,17 @@ enum DeviceLine: Equatable {
         guard let tag = parts.first, !tag.isEmpty else { return nil }
         let rest = Array(parts.dropFirst())
 
-        /// All fields numeric, with the expected count.
+        /// All fields numeric and finite, with the expected count ("nan" and "inf" parse as Doubles).
         func numbers(_ fields: [String], count: [Int]) -> [Double]? {
             let nums = fields.compactMap(Double.init)
-            return nums.count == fields.count && count.contains(nums.count) ? nums : nil
+            return nums.count == fields.count && count.contains(nums.count) && nums.allSatisfy(\.isFinite) ? nums : nil
         }
         func snapshot(_ n: [Double]) -> Snapshot {
             Snapshot(r: n[0], g: n[1], b: n[2], c: n[3], scatter: n[4], ir: n.count > 5 ? n[5] : nil)
         }
-        func sample(_ t: Double, _ n: [Double], led: String) -> Sample {
-            Sample(t_ms: Int(t), r: n[0], g: n[1], b: n[2], c: n[3], scatter: n[4], ir: n.count > 5 ? n[5] : nil, led: led)
+        func sample(_ t: Double, _ n: [Double], led: String) -> Sample? {
+            guard let ms = Int(exactly: t.rounded()), ms >= 0 else { return nil } // Int(nan) or Int(1e30) would trap
+            return Sample(t_ms: ms, r: n[0], g: n[1], b: n[2], c: n[3], scatter: n[4], ir: n.count > 5 ? n[5] : nil, led: led)
         }
 
         switch tag {
@@ -81,13 +82,14 @@ enum DeviceLine: Equatable {
                 self = .blank(led: "white", snapshot(n))
             } else { return nil }
         case "K":
-            guard let n = numbers(rest, count: [7]) else { return nil }
-            self = .sample(sample(n[0], Array(n.dropFirst()), led: "off"))
+            guard let n = numbers(rest, count: [7]), let s = sample(n[0], Array(n.dropFirst()), led: "off") else { return nil }
+            self = .sample(s)
         case "S":
-            if rest.count == 8, let led = Self.ledNames[rest[1]], let t = Double(rest[0]), let n = numbers(Array(rest[2...]), count: [6]) {
-                self = .sample(sample(t, n, led: led))
-            } else if let n = numbers(rest, count: [6]) { // v2: S,t_ms,r,g,b,c,scatter under white light
-                self = .sample(sample(n[0], Array(n.dropFirst()), led: "white"))
+            if rest.count == 8, let led = Self.ledNames[rest[1]], let t = Double(rest[0]), let n = numbers(Array(rest[2...]), count: [6]),
+               let s = sample(t, n, led: led) {
+                self = .sample(s)
+            } else if let n = numbers(rest, count: [6]), let s = sample(n[0], Array(n.dropFirst()), led: "white") { // v2: white light only
+                self = .sample(s)
             } else { return nil }
         default:
             return nil

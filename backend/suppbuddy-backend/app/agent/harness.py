@@ -61,12 +61,17 @@ async def _loop(context: dict) -> dict:
             output_config={"effort": settings.agent_effort})
         messages.append({"role": "assistant", "content": resp.content})
 
+        # Check this before looking for submit_report: a cut-off tool_use input still parses as a
+        # (partial) report, and a refusal can stop mid-input.
+        if resp.stop_reason == "refusal":
+            raise RuntimeError("Claude declined to write the explanation")
+        if resp.stop_reason == "max_tokens":
+            raise RuntimeError("explanation cut off at max_tokens")
+
         for block in resp.content:
             if block.type == "tool_use" and block.name == "submit_report":
                 return dict(block.input)
 
-        if resp.stop_reason == "refusal":
-            raise RuntimeError("Claude declined to write the explanation")
         if resp.stop_reason == "pause_turn":  # server tool (web search) mid-flight
             continue
         calls = [b for b in resp.content if b.type == "tool_use"]

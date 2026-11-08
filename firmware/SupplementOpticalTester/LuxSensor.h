@@ -15,9 +15,11 @@ class LuxSensor {
   LuxSensor();
   bool begin(TwoWire& bus);
   bool available() const { return ready_; }
+  bool alive();       // still answering on the bus (see RGBSensor::alive)
   LuxReading read();  // one fresh integration (about 120 ms at 100 ms integration)
 
  private:
   Adafruit_TSL2591 tsl_;
+  TwoWire* bus_ = nullptr;
   bool ready_ = false;
 };

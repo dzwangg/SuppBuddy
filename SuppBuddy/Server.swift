@@ -174,6 +174,9 @@ enum Server {
     private static func request(_ path: String, method: String = "GET", timeout: TimeInterval = 30) -> URLRequest {
         var req = URLRequest(url: URL(string: base + path) ?? URL(string: defaultURL + path)!, timeoutInterval: timeout)
         req.httpMethod = method
+        if let token = UserDefaults.standard.string(forKey: "apiToken")?.trimmingCharacters(in: .whitespaces), !token.isEmpty {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") // the server's API_TOKEN, when it has one
+        }
         return req
     }
 

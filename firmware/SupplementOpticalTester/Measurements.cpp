@@ -42,8 +42,18 @@ String Measurements::values(const Reading& r) {
          String(r.rgb.clear, 1) + "," + String(r.lux.full) + "," + String(r.lux.infrared);
 }
 
+// Re-probe both sensors: one that stopped answering returns stale registers, not an error, and the backend
+// would score that as a real, very dark sample. Tell the app instead, the same way as a missing sensor.
+static bool sensorsAlive(RGBSensor& rgb, LuxSensor& lux, const Measurements::Send& send) {
+  const bool r = rgb.alive(), l = lux.alive();
+  if (r && l) return true;
+  send(String("X,") + (r ? "TSL2591" : "TCS34725") + " stopped answering (loose wire or power dip?). Check the wiring, then rescan.\n");
+  send("E\n");
+  return false;
+}
+
 void Measurements::blank(const Send& send) {
-  if (!sensorsReady(send)) return;
+  if (!sensorsReady(send) || !sensorsAlive(rgb_, lux_, send)) return;
   info(send);
   send("D," + values(measure(LEDController::NONE)) + "\n");
   for (uint8_t i = 0; i < LEDController::COUNT; ++i) {
@@ -60,6 +70,10 @@ void Measurements::run(const Send& send, const KeepGoing& keepGoing) {
   // Cycles run until one has started at or after RUN_SECONDS, so the readings span the whole run.
   uint32_t cycleStart = 0;
   while (cycleStart < length && keepGoing()) {
+    if (!sensorsAlive(rgb_, lux_, send)) {  // one address probe per sensor per cycle; the app shows the X line
+      leds_.allOff();
+      return;
+    }
     // A dark reading every cycle lets the backend follow (and subtract) room light that drifts in.
     cycleStart = millis() - start;
     uint32_t t = cycleStart;
