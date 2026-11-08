@@ -67,9 +67,9 @@ Only QC-passing, user-confirmed scans update a fingerprint.
     "device_id": "esp32-01",
     "protocol": "v1",
     "led_mode": "white",                     // or "sequential_rgb"
-    "tcs_gain": 4, "tcs_integration_ms": 154,
+    "tcs_gain": 4, "tcs_integration_ms": 50,
     "dark":  { "r": 300, "g": 320, "b": 280, "c": 900, "scatter": 40 },
-    "blank": { "white": { "r": 18000, "g": 22000, "b": 15000, "c": 55000, "scatter": 400 } },
+    "blank": { "white": { "r": 6000, "g": 7000, "b": 5000, "c": 18855, "scatter": 400 } },
     "samples": [ { "t_ms": 0, "r": 17950, "g": 21900, "b": 14800, "c": 54000, "scatter": 410, "led": "white" } ]
   },
   "sample_prep": { "mass_mg": 100, "volume_ml": 3, "stirred": true, "form": "capsule_powder" }
@@ -88,7 +88,7 @@ Every assumption is tagged in code. `grep -rn "TODO(" app scripts data` lists th
 | `TODO(protocol)` | Akshay, Kevin | `app/schemas.py` | LEDs all-on vs. cycled R→G→B. Set `led_mode` default. |
 | `TODO(protocol)` | Akshay, Kevin | `app/schemas.py` `SamplePrep` | Lock powder mass, water volume, stir, run length. **Most important item on this list.** Bump `protocol` to `v2` if it changes after you collect data; old fingerprints won't mix. |
 | `TODO(protocol)` | Akshay, Kevin | `app/sensors/features.py` | Which LED drives the scatter reading in sequential mode (assumed green). |
-| `TODO(hardware)` | Akshay, Kevin | `app/config.py`, `.env` | `TCS_SATURATION` / `TSL_SATURATION` from chosen gain + integration time (TCS max = min(65535, 1024 × cycles)). |
+| `TODO(hardware)` | Akshay, Kevin | `app/config.py`, `.env` | `TCS_SATURATION` / `TSL_SATURATION` now match the firmware (TCS 50 ms → 21,000; TSL 100 ms → 37,000). Update them if the firmware's integration time changes (TCS max = min(65535, 1024 × cycles); TSL max = 37,888 at 100 ms, 65,535 at 200 ms+). |
 | `TODO(hardware)` | David | `app/schemas.py` | Firmware should report gain/integration so mismatched scans can be rejected. |
 | `TODO(lcd)` | Trevor | `app/scoring/verdict.py` `lcd_message` | Display size (16×2 assumed) and wording. Codes: `TESTING CONSISTENT CHECK WARNING NO_REF BAD_SCAN`. |
 | `TODO(calibrate)` | you, after scanning | `app/config.py` | z thresholds, `std_floor`, `turbidity_high`, `plateau_noise_high`. |

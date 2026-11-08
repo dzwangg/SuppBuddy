@@ -47,11 +47,12 @@ class Settings:
 
     # --- sensor protocol ---
     protocol_version: str = os.getenv("PROTOCOL_VERSION", "v1")
-    # TODO(hardware): TCS34725 is 16-bit; its real ceiling depends on integration time
-    # (max count = min(65535, 1024 * cycles)). Set from the integration time Akshay/Kevin pick.
-    tcs_saturation: float = float(os.getenv("TCS_SATURATION", "65000"))
-    # TODO(hardware): TSL2591 full-spectrum channel, 16-bit. Same caveat for gain/integration.
-    tsl_saturation: float = float(os.getenv("TSL_SATURATION", "65000"))
+    # Sensor ceilings for the settings in firmware/SupplementOpticalTester. If the firmware's
+    # integration time changes, change these too (gain does not move the ceiling, only the signal).
+    # TCS34725 at 50 ms: 21 cycles x 1024 = 21,504 max count. Flag a little below, where it goes non-linear.
+    tcs_saturation: float = float(os.getenv("TCS_SATURATION", "21000"))
+    # TSL2591 full-spectrum channel at 100 ms: 37,888 max count.
+    tsl_saturation: float = float(os.getenv("TSL_SATURATION", "37000"))
     min_samples: int = 10
     min_blank_signal: float = 50.0  # blank - dark must exceed this or the LED/sensor is not working
     plateau_window_s: float = 10.0
