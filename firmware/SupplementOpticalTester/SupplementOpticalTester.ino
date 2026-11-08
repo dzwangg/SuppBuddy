@@ -18,6 +18,7 @@ LuxSensor lux;
 Measurements measurements(leds, rgb, lux);
 BleLink ble;
 LiquidCrystal_I2C* lcd = nullptr;  // 16x2 on Wire (GPIO 21/22) next to the TCS34725; stays null if none answers
+uint32_t promptSince = 0;  // when a "Blank done"/"Run done" prompt went up; 0 = none on screen
 
 void help() {
   Serial.println("\n=== SuppBuddy optical tester (protocol v3) ===");
@@ -76,6 +77,7 @@ void showOnScreen(const String& text) {
   String line2 = bar > 0 ? text.substring(bar + 1) : "";
   Serial.println("SCREEN: " + line1 + " / " + line2);
   lcdShow(line1, line2);
+  promptSince = 0;  // what the phone sends (verdicts) stays up until the next test
 }
 
 // Runs one protocol command. Output always goes to Serial; it also goes to the phone when the phone
@@ -90,6 +92,7 @@ void handle(char command, const String& text, bool fromPhone) {
       lcdShow("SuppBuddy", "Reading water...");
       measurements.blank(send);
       lcdShow("Blank done", "Add the sample");
+      promptSince = millis();
       break;
     case 's': {
       const uint32_t start = millis();
@@ -100,6 +103,7 @@ void handle(char command, const String& text, bool fromPhone) {
         return !fromPhone || ble.connected();
       });
       lcdShow("Run done", "Tap Analyze");
+      promptSince = millis();
       break;
     }
     case 'i': measurements.info(send); break;
@@ -152,6 +156,10 @@ void setup() {
 }
 
 void loop() {
+  if (promptSince && millis() - promptSince > Config::PROMPT_TIMEOUT_MS) {  // nobody followed up: back to idle
+    lcdShow("SuppBuddy", "Ready");
+    promptSince = 0;
+  }
   String text;
   char command = ble.takeCommand(text);
   if (command) handle(command, text, true);
