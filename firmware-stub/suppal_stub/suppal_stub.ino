@@ -25,7 +25,7 @@ const int RUN_SECONDS = 60;
 // Fake optics: dark counts, water blank counts, and a sample that dissolves like vitamin C
 // (absorbance A per channel at the end, cloudiness S times the water reading, time constant TAU).
 const float DARK[5]  = {300, 320, 280, 900, 40};
-const float BLANK[5] = {18000, 22000, 15000, 55000, 400};
+const float BLANK[5] = {6000, 7000, 5000, 18855, 400};  // under the TCS34725's 21,504 ceiling at 50 ms
 const float A[3] = {0.01, 0.01, 0.03}, S = 1.1, TAU = 5;
 
 BLECharacteristic *tx;

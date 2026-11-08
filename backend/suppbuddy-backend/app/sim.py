@@ -32,7 +32,8 @@ PROFILES: dict[str, dict] = {
 }
 
 DARK = {"r": 300.0, "g": 320.0, "b": 280.0, "c": 900.0, "scatter": 40.0}
-BLANK = {"r": 18000.0, "g": 22000.0, "b": 15000.0, "c": 55000.0, "scatter": 400.0}
+# Kept under the real TCS34725 ceiling at 50 ms (21,504), clear channel included.
+BLANK = {"r": 6000.0, "g": 7000.0, "b": 5000.0, "c": 18855.0, "scatter": 400.0}
 
 
 def generate(profile: str, device_id: str = "sim-001", duration_s: int = 90, hz: float = 1.0,
