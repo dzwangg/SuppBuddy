@@ -265,6 +265,14 @@ def extract_features(readings: DeviceReadings, prep: SamplePrep | None = None) -
 
     _normalize_to_standard_prep(prep, res)
 
+    # NaN/inf can't come in over the API any more (schemas), but can still be computed (all t_ms equal).
+    # It passes every comparison below and breaks the JSON response, so stop here and store nothing.
+    if any(isinstance(v, float) and not math.isfinite(v) for v in res.features.values()):
+        res.ok = False
+        res.features = {}
+        res.qc_flags.append("non_finite_feature (timestamps or readings produced NaN; check the tester)")
+        return res
+
     # Flat signal: looks like plain water. Peel rejected these; we do too.
     f = res.features
     if max(abs(f["A_R"]), abs(f["A_G"]), abs(f["A_B"])) < 0.01 and f["S_final"] < 1.05:
@@ -347,7 +355,7 @@ def _scatter_features(t: np.ndarray, s: np.ndarray, s_final: float) -> dict:
         out["S_residual"] = round(min(1.5, max(0.0, (s_final - 1) / (peak - 1))), 4)
 
     win = t >= (t[-1] - settings.settle_window_s)
-    if win.sum() >= 3:
+    if win.sum() >= 3 and np.ptp(t[win]) > 0:  # a slope needs the window to span some time
         excess = s[win] - 1
         mean_x = float(np.mean(excess))
         if mean_x >= settings.min_excess_scatter:

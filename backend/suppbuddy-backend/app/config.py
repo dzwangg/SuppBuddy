@@ -22,6 +22,7 @@ def _bool(name: str, default: bool = False) -> bool:
 @dataclass(frozen=True)
 class Settings:
     # --- infra ---
+    api_token: str | None = os.getenv("API_TOKEN") or None  # shared bearer token; unset = no auth (local dev)
     database_url: str = os.getenv("DATABASE_URL", f"sqlite:///{ROOT / 'data' / 'suppbuddy.db'}")
     data_dir: Path = ROOT / "data"
 

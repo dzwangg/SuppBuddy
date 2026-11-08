@@ -4,11 +4,18 @@
 RGBSensor::RGBSensor() : tcs_(Config::TCS_INTEGRATION, Config::TCS_GAIN) {}
 
 bool RGBSensor::begin(TwoWire& bus) {
+  bus_ = &bus;
   ready_ = tcs_.begin(TCS34725_ADDRESS, &bus);
   // On breakouts whose white illumination LED is wired to INT, this turns that LED off.
   // Boards without that link need the LED pin tied to GND (see README).
   if (ready_) tcs_.setInterrupt(true);
   return ready_;
+}
+
+bool RGBSensor::alive() {
+  if (!ready_ || !bus_) return false;
+  bus_->beginTransmission(TCS34725_ADDRESS);
+  return bus_->endTransmission() == 0;  // ACKed its address
 }
 
 RGBReading RGBSensor::readAveraged(uint8_t count) {

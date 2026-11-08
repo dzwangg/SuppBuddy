@@ -51,14 +51,16 @@ TOOL_SPECS: list[dict] = [
 SUBMIT_REPORT = {
     "name": "submit_report",
     "description": "Submit the final user-facing write-up. Call exactly once, at the end.",
+    "strict": True,  # schema-valid input; the replacement for a forced tool call on current models
     "input_schema": {
         "type": "object",
+        "additionalProperties": False,
         "properties": {
             "headline": {"type": "string", "description": "Max 8 words, consistent with the given verdict."},
             "summary": {"type": "string", "description": "2-4 plain-language sentences, max 90 words."},
-            "key_findings": {"type": "array", "items": {"type": "string"}, "maxItems": 6},
-            "advice": {"type": "array", "items": {"type": "string"}, "maxItems": 4},
-            "citations": {"type": "array", "items": {"type": "object", "properties": {
+            "key_findings": {"type": "array", "items": {"type": "string"}, "description": "Up to 6."},
+            "advice": {"type": "array", "items": {"type": "string"}, "description": "Up to 2; the measured advice is kept."},
+            "citations": {"type": "array", "items": {"type": "object", "additionalProperties": False, "properties": {
                 "source": {"type": "string"}, "title": {"type": "string"}, "url": {"type": "string"}},
                 "required": ["source"]}},
         },
@@ -93,6 +95,8 @@ async def _dsld_search(query: str) -> list:
 
 
 async def _dsld_label(dsld_id: str) -> dict:
+    if not str(dsld_id).isdigit():  # it goes into a URL path
+        raise ValueError("dsld_id must be numeric")
     return await dsld.get_label(dsld_id)
 
 

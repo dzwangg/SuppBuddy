@@ -28,7 +28,9 @@ let blank = Snapshot(r: 18000, g: 22000, b: 15000, c: 55000, scatter: 400)
 precondition(DeviceLine("D,300,320,280,900,40") == .dark(dark))
 precondition(DeviceLine("B, 18000, 22000, 15000, 55000, 400") == .blank(led: "white", blank))
 precondition(DeviceLine("S,2000,1800,2200,1500,5500,760") == .sample(Sample(t_ms: 2000, r: 1800, g: 2200, b: 1500, c: 5500, scatter: 760)))
-for bad in ["m", ",", "S,1,2,3", "D,1,2,x,4,5", "B,1,2,3,4,5,6", "123", "B,Y,1,2,3,4,5,6", "S,1,Q,1,2,3,4,5,6", "K,1,2,3", "I,v3,4,50", "E,1"] {
+for bad in ["m", ",", "S,1,2,3", "D,1,2,x,4,5", "B,1,2,3,4,5,6", "123", "B,Y,1,2,3,4,5,6", "S,1,Q,1,2,3,4,5,6", "K,1,2,3", "I,v3,4,50", "E,1",
+            // non-finite or huge numbers parse as Doubles; Int(nan) and Int(1e30) used to trap the app
+            "S,nan,W,1,2,3,4,5,6", "S,1e30,W,1,2,3,4,5,6", "K,inf,1,2,3,4,5,6", "S,-5,W,1,2,3,4,5,6", "D,1,2,nan,4,5,6", "S,2000,1800,inf,1500,5500,760"] {
     precondition(DeviceLine(bad) == nil, bad)
 }
 

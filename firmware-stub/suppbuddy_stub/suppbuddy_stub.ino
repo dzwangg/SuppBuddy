@@ -32,6 +32,7 @@ const float BLANK[4][6] = {
 const float A[3] = {0.01, 0.01, 0.03}, S_PEAK = 2.5, S_FINAL = 1.1, TAU = 5, SCATTER_EXP = 1.5;
 
 BLECharacteristic *tx;
+BLEServer *server;
 volatile char command = 0;
 String screenText;
 
@@ -86,7 +87,7 @@ void setup() {
   Serial.begin(115200);
   BLEDevice::init("SuppBuddy");
   BLEDevice::setMTU(185);  // each line must fit in one notification
-  BLEServer *server = BLEDevice::createServer();
+  server = BLEDevice::createServer();
   server->setCallbacks(new ServerCallbacks());
   BLEService *service = server->createService(SERVICE_UUID);
   tx = service->createCharacteristic(TX_UUID, BLECharacteristic::PROPERTY_NOTIFY);
@@ -114,7 +115,8 @@ void loop() {
     send(info);
     unsigned long start = millis();
     unsigned long cycleStart = 0;
-    while (cycleStart < RUN_SECONDS * 1000UL) {  // like the tester: the last cycle starts at or after RUN_SECONDS
+    // like the tester: the last cycle starts at or after RUN_SECONDS, and a disconnect ends the run
+    while (cycleStart < RUN_SECONDS * 1000UL && server->getConnectedCount() > 0) {
       cycleStart = millis() - start;
       fakeDark(v);
       send("K," + String(cycleStart) + values(v) + "\n");
@@ -131,4 +133,5 @@ void loop() {
     Serial.print("screen: ");
     Serial.println(screenText.substring(2));  // real firmware: draw on the display
   }
+  command = 0;  // like the tester: a command that arrived mid-run is stale, don't run it now
 }

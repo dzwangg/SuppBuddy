@@ -31,7 +31,8 @@ async def _get(path: str, search: str, limit: int) -> dict:
         r = await client.get(url)
     if r.status_code == 404:
         return {"meta": {"results": {"total": 0}}, "results": []}
-    r.raise_for_status()
+    if r.status_code >= 400:  # not raise_for_status(): its message includes the URL, api_key and all
+        raise RuntimeError(f"openFDA HTTP {r.status_code}")
     return r.json()
 
 

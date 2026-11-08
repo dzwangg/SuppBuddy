@@ -194,6 +194,7 @@ struct ContentView: View {
             var record: TestRecord?
             let started = Date.now
             var onScreen: Lcd?
+            var failedPolls = 0
             while true {
                 withAnimation { steps = Server.steps(for: scan) }
                 if scan.lcd != onScreen { // tester screen: "Analyzing..." now, the verdict as soon as it's set
@@ -208,7 +209,13 @@ struct ContentView: View {
                 // The server gives the explanation up to 90 s; stop following a little after that.
                 if scan.status == "complete" || scan.status == "error" || Date.now.timeIntervalSince(started) > 120 { break }
                 try await Task.sleep(for: .seconds(1))
-                scan = try await Server.scan(scan.id)
+                do {
+                    scan = try await Server.scan(scan.id)
+                    failedPolls = 0
+                } catch { // flaky Wi-Fi: keep the verdict already on screen instead of dropping the whole test
+                    failedPolls += 1
+                    if failedPolls >= 3 { if record != nil { break } else { throw error } }
+                }
             }
             guard let record else { throw AppError("The server couldn't finish this scan. Try again.") }
             history.insert(record, at: 0)
@@ -460,7 +467,7 @@ struct ReportView: View {
                     Section("Sources") {
                         ForEach(report.citations.indices, id: \.self) { i in
                             let c = report.citations[i]
-                            if let link = c.url.flatMap(URL.init(string:)) {
+                            if let link = c.url.flatMap(URL.init(string:)), ["http", "https"].contains(link.scheme?.lowercased() ?? "") {
                                 Link(destination: link) { Label(c.title ?? c.source, systemImage: "link") }
                             } else {
                                 Label(c.title ?? c.source, systemImage: "doc.text")
@@ -617,6 +624,7 @@ struct HistoryRow: View {
 /// Where the backend runs. Stored on the phone, so switching laptops or ngrok addresses needs no rebuild.
 struct SettingsView: View {
     @AppStorage("server") private var server = ""
+    @AppStorage("apiToken") private var apiToken = ""
     @AppStorage("sampleMassMg") private var sampleMassMg = 500.0
     @AppStorage("sampleVolumeMl") private var sampleVolumeMl = 50.0
     @State private var result: String?
@@ -634,6 +642,15 @@ struct SettingsView: View {
                     Text("Server")
                 } footer: {
                     Text("The laptop running the backend, like http://192.168.1.20:8000 on the same Wi-Fi, or an ngrok https address. Empty means \(Server.defaultURL), which works in the Simulator.")
+                }
+                Section {
+                    SecureField("API token", text: $apiToken)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                } header: {
+                    Text("API token")
+                } footer: {
+                    Text("Only if the server's .env sets API_TOKEN (do that before it's reachable beyond the laptop). Sent with every request.")
                 }
                 Section {
                     Button("Test connection") { Task { result = await check() } }
