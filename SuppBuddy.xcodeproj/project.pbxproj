@@ -11,6 +11,7 @@
 		16B7FCCFAB7E279D37CD27A9 /* SuppBuddyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C2D341C02F175E2BA7B9C4 /* SuppBuddyApp.swift */; };
 		2F404C05F518B474C2DC17B2 /* Analysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BDA3581541F21AC1604BBB /* Analysis.swift */; };
 		5E8BA6DEBD95F6748EDC3F24 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3059DD892FE5CAE290A24332 /* Server.swift */; };
+		AD933EC3932A2F7EC1D74FB8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 34E5BD992423D89FBDC18B91 /* Assets.xcassets */; };
 		E12C1D92AF3A8ECAA9D0C5DF /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7982D53A4331B7A9307F90A0 /* Device.swift */; };
 		FF1B4A0D902698E50B04073F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE3DED83D57AFDEE3775B8A /* ContentView.swift */; };
 /* End PBXBuildFile section */
@@ -18,6 +19,7 @@
 /* Begin PBXFileReference section */
 		09C2D341C02F175E2BA7B9C4 /* SuppBuddyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuppBuddyApp.swift; sourceTree = "<group>"; };
 		3059DD892FE5CAE290A24332 /* Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
+		34E5BD992423D89FBDC18B91 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		6BE3DED83D57AFDEE3775B8A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		7982D53A4331B7A9307F90A0 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
 		7EC35F4E05A69CB7BDC3F189 /* SuppBuddy.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SuppBuddy.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -47,6 +49,7 @@
 			isa = PBXGroup;
 			children = (
 				C8BDA3581541F21AC1604BBB /* Analysis.swift */,
+				34E5BD992423D89FBDC18B91 /* Assets.xcassets */,
 				6BE3DED83D57AFDEE3775B8A /* ContentView.swift */,
 				7982D53A4331B7A9307F90A0 /* Device.swift */,
 				C0EDACB7173CE065CA49AA8B /* Info.plist */,
@@ -65,6 +68,7 @@
 			buildConfigurationList = 68A39A45B56687D1FF94D834 /* Build configuration list for PBXNativeTarget "SuppBuddy" */;
 			buildPhases = (
 				41816B3A29D6669EE8D815DD /* Sources */,
+				B41D5C0E1BF92C3CDAAE354F /* Resources */,
 			);
 			buildRules = (
 			);
@@ -106,6 +110,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		B41D5C0E1BF92C3CDAAE354F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AD933EC3932A2F7EC1D74FB8 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		41816B3A29D6669EE8D815DD /* Sources */ = {
