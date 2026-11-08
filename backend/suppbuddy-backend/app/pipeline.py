@@ -21,7 +21,7 @@ from app.db import Scan, session
 from app.evidence import dsld, openfda, tainted
 from app.evidence.cache import OfflineMiss
 from app.fingerprints import fingerprint_stats, get_fingerprint, get_or_create_product
-from app.schemas import Citation, DeviceReadings, LabelInfo, Report, Verdict
+from app.schemas import Citation, DeviceReadings, LabelInfo, Report, SamplePrep, Verdict
 from app.scoring.accuracy import score_accuracy
 from app.scoring.quality import score_quality
 from app.scoring.reputability import score_reputability
@@ -78,6 +78,7 @@ async def run_scan(scan_id: str) -> None:
         scan = s.get(Scan, scan_id)
         label = LabelInfo.model_validate(scan.label) if scan.label else None
         readings = DeviceReadings.model_validate(scan.readings) if scan.readings else None
+        prep = SamplePrep.model_validate(scan.sample_prep) if scan.sample_prep else None
         product_id = scan.product_id
         synthetic = scan.synthetic
 
@@ -85,7 +86,7 @@ async def run_scan(scan_id: str) -> None:
     features, qc = None, None
     if readings:
         try:
-            fr = extract_features(readings)
+            fr = extract_features(readings, prep)
             features = fr.features if fr.ok else (fr.features or None)
             qc = {**fr.qc_dict(), "series": fr.series}
             _patch(scan_id, ("features", {"status": "ok" if fr.ok else "qc_failed"}), features=features, qc=qc)
@@ -99,7 +100,8 @@ async def run_scan(scan_id: str) -> None:
     # ---- Stage 1: product -------------------------------------------------
     with session() as s:
         if not product_id and label:
-            p = get_or_create_product(s, label.brand, label.product_name, label.model_dump())
+            p = get_or_create_product(s, label.brand, label.product_name, label.model_dump(),
+                                      upc=label.upc, flavor=label.flavor)
             product_id = p.id if p else None
     _patch(scan_id, ("product", {"status": "ok" if product_id else "unknown"}), product_id=product_id)
 

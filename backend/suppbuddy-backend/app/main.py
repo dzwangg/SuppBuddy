@@ -14,6 +14,7 @@ from app.db import Fingerprint, Product, Scan, init_db, session
 from app.evidence import tainted
 from app.fingerprints import fingerprint_stats, update_fingerprint
 from app.schemas import ConfirmRequest, LabelInfo, ScanCreate
+from app.scoring.accuracy import score_against_crowd
 from app.scoring.verdict import lcd_message
 
 logging.basicConfig(level=logging.INFO)
@@ -134,7 +135,11 @@ async def rerun(scan_id: str, wait: bool = False):
 
 @app.post("/scans/{scan_id}/confirm")
 def confirm(scan_id: str, body: ConfirmRequest | None = None):
-    """User confirms product identity. Only confirmed, QC-passing scans feed the crowd fingerprint."""
+    """User confirms product identity. Only confirmed, QC-passing scans feed the crowd fingerprint.
+
+    Once a product has an established reference, a scan that's inconsistent with it is held instead of
+    merged ({"held": true, ...}): it could be a fake, a bad prep, or someone poisoning the data, and one
+    bad scan in a reference of 3-5 would corrupt it. Send {"force": true} to merge it after review."""
     with session() as s:
         scan = s.get(Scan, scan_id)
         if not scan:
@@ -150,10 +155,22 @@ def confirm(scan_id: str, body: ConfirmRequest | None = None):
         if not scan.features or not (scan.qc or {}).get("ok"):
             raise HTTPException(422, "scan failed QC; not adding to reference data")
         protocol = (scan.readings or {}).get("protocol", settings.protocol_version)
+        existing = s.get(Fingerprint, (scan.product_id, protocol))
+        if existing and existing.n >= settings.min_fingerprint_n and not (body and body.force):
+            check = score_against_crowd(scan.features, fingerprint_stats(existing), existing.n, existing.synthetic)
+            if check.label == "inconsistent":
+                held = {"status": "held", "distance": check.distance, "max_z": check.max_z,
+                        "top_deviations": check.top_deviations}
+                scan.stages = {**(scan.stages or {}), "confirm": held}
+                scan.revision += 1
+                return {"held": True, "product_id": scan.product_id, "protocol": protocol, "n": existing.n,
+                        "synthetic": existing.synthetic,
+                        "reason": f"This scan doesn't match the {existing.n} confirmed scans of this product, "
+                                  "so it was held for review instead of added to the reference."}
         fp = update_fingerprint(s, scan.product_id, scan.features, protocol, scan.synthetic)
         scan.confirmed = True
         scan.revision += 1
-        return {"product_id": scan.product_id, "protocol": protocol, "n": fp.n,
+        return {"held": False, "product_id": scan.product_id, "protocol": protocol, "n": fp.n,
                 "synthetic": fp.synthetic, "features": fingerprint_stats(fp)}
 
 
@@ -206,7 +223,7 @@ def dev_profiles():
 
 
 @app.get("/dev/readings")
-def dev_readings(profile: str = "b_complex", led_mode: str = "white", seed: int | None = None):
+def dev_readings(profile: str = "b_complex", led_mode: str = "cycle", seed: int | None = None):
     """Raw simulated device payload: the exact shape the phone should POST in `readings`."""
     if profile not in sim.PROFILES:
         raise HTTPException(404, f"unknown profile; try {list(sim.PROFILES)}")

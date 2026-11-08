@@ -37,12 +37,23 @@ def match_class(label: LabelInfo | None) -> dict | None:
     return best
 
 
+LABEL_ORDER = ["consistent", "borderline", "inconsistent"]
+
+
 def _label_from_distance(d: float) -> str:
     if d <= settings.z_consistent:
         return "consistent"
     if d <= settings.z_borderline:
         return "borderline"
     return "inconsistent"
+
+
+def _label_from_max(z: float) -> str:
+    if z > settings.z_single_inconsistent:
+        return "inconsistent"
+    if z > settings.z_single_borderline:
+        return "borderline"
+    return "consistent"
 
 
 def score_against_crowd(features: dict, stats: dict, n: int, synthetic: bool) -> AccuracyScore:
@@ -58,9 +69,13 @@ def score_against_crowd(features: dict, stats: dict, n: int, synthetic: bool) ->
                              reference_synthetic=synthetic, note="No overlapping features with the fingerprint.")
     d = math.sqrt(sum(z * z for _, z, _, _ in zs) / len(zs))  # RMS z, scale-free across feature count
     top = sorted(zs, key=lambda r: -abs(r[1]))[:3]
+    max_z = abs(top[0][1])
+    # The worse of the two: a broad drift across features, or one feature far off on its own.
+    label = max(_label_from_distance(d), _label_from_max(max_z), key=LABEL_ORDER.index)
     return AccuracyScore(
-        label=_label_from_distance(d),
+        label=label,
         distance=round(d, 3),
+        max_z=round(max_z, 2),
         reference="crowd",
         reference_n=n,
         reference_synthetic=synthetic,

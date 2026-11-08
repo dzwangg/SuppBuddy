@@ -1,0 +1,52 @@
+# Checks every push and pull request: backend tests, the app's logic self-check, and both firmware builds.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/suppbuddy-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/suppbuddy-backend/requirements.txt
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q  # offline: tests set EVIDENCE_OFFLINE and no API key
+
+  app-check:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: App logic self-check
+        run: |
+          swiftc SupPal/Analysis.swift SupPal/Server.swift SupPal/NIH.swift checks/main.swift -o "$RUNNER_TEMP/suppal-check"
+          "$RUNNER_TEMP/suppal-check"
+      - name: Type-check the whole app (iPhone and Simulator)
+        run: |
+          xcrun --sdk iphoneos swiftc -typecheck -target arm64-apple-ios17.0 -swift-version 5 SupPal/*.swift
+          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator -swift-version 5 SupPal/*.swift
+
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Install the ESP32 core and sensor libraries
+        run: |
+          URL=https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index --additional-urls "$URL"
+          arduino-cli core install esp32:esp32 --additional-urls "$URL"
+          arduino-cli lib install "Adafruit TCS34725" "Adafruit TSL2591 Library" "Adafruit Unified Sensor" "Adafruit BusIO"
+      - name: Build the tester firmware
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware/SupplementOpticalTester
+      - name: Build the fake-data stub
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware-stub/suppal_stub

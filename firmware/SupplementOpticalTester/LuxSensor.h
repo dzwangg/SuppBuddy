@@ -5,19 +5,17 @@
 #include <Adafruit_TSL2591.h>
 
 struct LuxReading {
-  uint16_t full = 0;       // TSL2591 CH0: broadband (visible + IR)
-  uint16_t infrared = 0;   // TSL2591 CH1: IR-sensitive
-  int32_t visible = 0;     // Derived: full - infrared
-  float lux = NAN;         // Derived: lux estimate, NAN when invalid
-  bool valid = false;
+  uint16_t full = 0;      // CH0: visible + infrared. In this rig: light scattered sideways by the sample.
+  uint16_t infrared = 0;  // CH1: infrared only. The LEDs emit almost none, so a rise means room light is leaking in.
 };
 
+// TSL2591 at 90 degrees to the beam. Gain and integration time stay fixed so runs compare.
 class LuxSensor {
  public:
   LuxSensor();
   bool begin(TwoWire& bus);
   bool available() const { return ready_; }
-  LuxReading read();
+  LuxReading read();  // one fresh integration (about 120 ms at 100 ms integration)
 
  private:
   Adafruit_TSL2591 tsl_;

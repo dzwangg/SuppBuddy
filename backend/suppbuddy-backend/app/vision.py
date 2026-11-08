@@ -13,6 +13,8 @@ from app.schemas import LabelInfo
 
 PROMPT = """You are reading a photo of a dietary supplement container or its Supplement Facts panel.
 Extract only what is printed. Do not guess values that are not visible; leave them null.
+- flavor: the flavor name if one is printed (e.g. "Double Rich Chocolate", "Unflavored"), else null.
+- upc: the barcode digits only if they're printed and fully legible.
 - ingredients: each row of the Supplement Facts panel with amount and unit per serving.
 - other_ingredients: the "Other ingredients" line, split into items.
 - certifications: third-party seals printed on the label (USP Verified, NSF, Informed Sport...).

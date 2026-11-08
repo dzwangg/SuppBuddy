@@ -1,101 +1,116 @@
+// SupPal optical tester firmware, protocol v3 (repo README, "BLE contract").
+// The iPhone powers the tester over USB and controls it over Bluetooth. The same commands work
+// from Arduino's Serial Monitor (115200 baud, "Newline"), so the rig can be tested on a laptop.
 #include <Wire.h>
 #include "Config.h"
 #include "LEDController.h"
 #include "RGBSensor.h"
 #include "LuxSensor.h"
 #include "Measurements.h"
+#include "BleLink.h"
 
-// Single Arduino sketch. Different features live in their own .h/.cpp files.
 // Both optical sensors use I2C address 0x29, so each has its own bus.
 TwoWire LuxWire(1);
 LEDController leds;
 RGBSensor rgb;
 LuxSensor lux;
 Measurements measurements(leds, rgb, lux);
-
-enum class Mode { LED, ALL_ON, OFF, RGB, LUX, SCAN, AMBIENT };
-Mode mode = Mode::LED;  // LEDs chase at startup; use Serial Monitor to switch.
+BleLink ble;
 
 void help() {
-  Serial.println("\n=== Supplement Optical Tester ===");
-  Serial.println("Type a command, then press Enter (115200 baud):");
-  Serial.println("  led     - flash five LEDs one after another");
-  Serial.println("  on      - turn all five LEDs on");
-  Serial.println("  off     - turn all five LEDs off (idle)");
-  Serial.println("  rgb     - TCS34725 + five-LED color/intensity sweep");
-  Serial.println("  lux     - TSL2591 + five-LED light-intensity sweep");
-  Serial.println("  scan    - both sensors + CSV output for all five LEDs");
-  Serial.println("  ambient - measure both sensors with LEDs off");
-  Serial.println("  status  - print detected sensors");
-  Serial.println("  help    - show commands");
+  Serial.println("\n=== SupPal optical tester (protocol v3) ===");
+  Serial.println("Type a command and press Enter (115200 baud, Newline):");
+  Serial.println("  b       - dark + water-blank readings for each LED");
+  Serial.println("  s       - sample run: a dark + W/R/G/B reading cycle for 60 s");
+  Serial.println("  i       - sensor settings line");
+  Serial.println("  status  - which sensors were detected");
+  Serial.println("  led     - light each LED for half a second (wiring check)");
+  Serial.println("  help    - this list");
+  Serial.println("Lines: I=settings D=dark B=blank K=dark during run S=sample E=end X=error");
+  Serial.println("Values: r,g,b,c (TCS34725 transmitted) then full,ir (TSL2591 scattered)");
 }
 
 void status() {
-  Serial.print("TCS34725 on GPIO21/22: ");
+  Serial.print("TCS34725 on GPIO 21/22: ");
   Serial.println(rgb.available() ? "DETECTED" : "NOT DETECTED");
-  Serial.print("TSL2591 on GPIO16/17: ");
+  Serial.print("TSL2591 on GPIO 16/17: ");
   Serial.println(lux.available() ? "DETECTED" : "NOT DETECTED");
+  Serial.print("Bluetooth: ");
+  Serial.println(ble.connected() ? "phone connected" : "advertising as SupPal");
 }
 
-void readCommand() {
+void ledCheck() {
+  for (uint8_t i = 0; i < LEDController::COUNT; ++i) {
+    Serial.print("LED ON: ");
+    Serial.println(leds.name(i));
+    leds.onOnly(i);
+    delay(500);
+  }
+  leds.allOff();
+}
+
+// TODO(lcd): draw on the tester's display once it's wired (16x2 assumed by the backend).
+void showOnScreen(const String& text) {
+  // text is "L|line1|line2"
+  int bar = text.indexOf('|', 2);
+  String line1 = bar > 0 ? text.substring(2, bar) : text.substring(2);
+  String line2 = bar > 0 ? text.substring(bar + 1) : "";
+  Serial.println("SCREEN: " + line1 + " / " + line2);
+}
+
+// Runs one protocol command. Output always goes to Serial; it also goes to the phone when the phone
+// asked. A run started from the phone stops early if the phone disconnects.
+void handle(char command, const String& text, bool fromPhone) {
+  Measurements::Send send = [fromPhone](const String& line) {
+    Serial.print(line);
+    if (fromPhone) ble.send(line);
+  };
+  switch (command) {
+    case 'b': measurements.blank(send); break;
+    case 's': measurements.run(send, [fromPhone] { return !fromPhone || ble.connected(); }); break;
+    case 'i': measurements.info(send); break;
+    case 'L': showOnScreen(text); break;
+    default: break;
+  }
+}
+
+void readSerial() {
   if (!Serial.available()) return;
   String cmd = Serial.readStringUntil('\n');
   cmd.trim();
-  cmd.toLowerCase();
   if (cmd.length() == 0) return;
-
-  leds.allOff();
-  if      (cmd == "led") mode = Mode::LED;
-  else if (cmd == "on") mode = Mode::ALL_ON;
-  else if (cmd == "off") mode = Mode::OFF;
-  else if (cmd == "rgb") mode = Mode::RGB;
-  else if (cmd == "lux") mode = Mode::LUX;
-  else if (cmd == "scan") {
-    mode = Mode::SCAN;
-    measurements.csvHeader();
-  }
-  else if (cmd == "ambient") mode = Mode::AMBIENT;
-  else if (cmd == "status") status();
-  else if (cmd == "help") help();
+  String lower = cmd;
+  lower.toLowerCase();
+  if (lower == "status") status();
+  else if (lower == "led") ledCheck();
+  else if (lower == "help") help();
+  else if (lower == "b" || lower == "s" || lower == "i") handle(lower[0], cmd, false);
+  else if (cmd.startsWith("L|")) handle('L', cmd, false);
   else Serial.println("Unknown command. Type help.");
 }
 
 void setup() {
   Serial.begin(Config::SERIAL_BAUD);
   Serial.setTimeout(75);
-  delay(500);
+  delay(300);
   leds.begin();
 
   Wire.begin(Config::RGB_SDA, Config::RGB_SCL);
   Wire.setClock(100000);
   LuxWire.begin(Config::LUX_SDA, Config::LUX_SCL);
   LuxWire.setClock(100000);
-
-  rgb.begin(Wire);       // Failing to detect one sensor won't block other modes.
+  rgb.begin(Wire);  // a missing sensor is reported to the app as an X line, not a crash
   lux.begin(LuxWire);
+
+  ble.begin(Config::BLE_NAME);
   status();
   help();
-  Serial.println("Default mode: led");
 }
 
 void loop() {
-  readCommand();
-  switch (mode) {
-    case Mode::LED: {
-      static uint8_t position = 0;
-      leds.onOnly(position);
-      Serial.print("LED ON: "); Serial.println(leds.name(position));
-      delay(500);
-      leds.allOff();
-      delay(200);
-      position = (position + 1) % LEDController::COUNT;
-      break;
-    }
-    case Mode::ALL_ON: leds.allOn(); delay(100); break;
-    case Mode::OFF: leds.allOff(); delay(100); break;
-    case Mode::RGB: measurements.sweepRGB(); break;
-    case Mode::LUX: measurements.sweepLux(); break;
-    case Mode::SCAN: measurements.sweepCombinedCSV(); break;
-    case Mode::AMBIENT: measurements.ambient(); delay(900); break;
-  }
+  String text;
+  char command = ble.takeCommand(text);
+  if (command) handle(command, text, true);
+  readSerial();
+  delay(5);
 }

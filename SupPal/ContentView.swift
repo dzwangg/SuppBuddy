@@ -5,8 +5,11 @@ import VisionKit
 
 struct ContentView: View {
     @State private var device = Device()
-    @State private var blank: (dark: Snapshot, blank: Snapshot)?
+    @State private var blank: BlankSet?
     @State private var samples: [Sample] = []
+    // The locked sample prep; the server rescales scans made with a different amount.
+    @AppStorage("sampleMassMg") private var sampleMassMg = 500.0
+    @AppStorage("sampleVolumeMl") private var sampleVolumeMl = 50.0
     @State private var photo: UIImage?
     @State private var label = LabelInfo()
     @State private var labelNote: String?
@@ -44,8 +47,8 @@ struct ContentView: View {
                         }
 
                         StepCard(number: 2, title: "Sample",
-                                 detail: "Add the supplement to fresh water in the cuvette, insert it, then start. Keep it still for the whole run (about a minute).",
-                                 done: samples.count >= 10 && busy == nil) {
+                                 detail: "Stir \(Int(sampleMassMg)) mg of the supplement into \(Int(sampleVolumeMl)) mL of water, fill the cuvette, insert it, then start. Keep it still for the whole run (about a minute).",
+                                 done: whiteSamples.count >= 10 && busy == nil) {
                             Button(samples.isEmpty ? "Start run" : "Run again") {
                                 samples = []
                                 steps = []
@@ -53,8 +56,8 @@ struct ContentView: View {
                             }
                             .buttonStyle(.bordered)
                             .disabled(blank == nil || !device.isReady)
-                            if !samples.isEmpty, let blank {
-                                let points = samples.compactMap { livePoint($0, dark: blank.dark, blank: blank.blank) }
+                            if !whiteSamples.isEmpty, let blank, let white = blank.white {
+                                let points = whiteSamples.compactMap { livePoint($0, dark: blank.dark, blank: white) }
                                 DissolutionChart(absorbance: points.map { [$0.seconds, $0.absorbance] },
                                                  cloudiness: points.map { [$0.seconds, $0.cloudiness] })
                             }
@@ -80,6 +83,7 @@ struct ContentView: View {
                             Group { // brand names aren't dictionary words; autocorrect turned "DemoLabs" into "Demo labs"
                                 TextField("Brand", text: field(\.brand))
                                 TextField("Product (or what it was sold as)", text: field(\.product_name))
+                                TextField("Flavor (if any)", text: field(\.flavor))
                             }
                             .textFieldStyle(.roundedBorder)
                             .autocorrectionDisabled()
@@ -159,7 +163,7 @@ struct ContentView: View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            .disabled(blank == nil || samples.count < 10 || readingLabel || lookingUp)
+            .disabled(blank == nil || whiteSamples.count < 10 || readingLabel || lookingUp)
 
             if let busy, steps.isEmpty { ProgressView(busy).font(.subheadline) }
             if !steps.isEmpty { ResearchFeed(steps: steps, live: busy != nil) }
@@ -170,6 +174,9 @@ struct ContentView: View {
         }
     }
 
+    /// White-light readings drive the live chart (the colored-LED and dark readings go to the server).
+    private var whiteSamples: [Sample] { samples.filter { $0.led == "white" } }
+
     private func field(_ key: WritableKeyPath<LabelInfo, String?>) -> Binding<String> {
         Binding(get: { label[keyPath: key] ?? "" }, set: { label[keyPath: key] = $0.isEmpty ? nil : $0 })
     }
@@ -177,12 +184,13 @@ struct ContentView: View {
     /// Sends the readings and label, then follows the server's stages until Claude's explanation lands.
     private func analyze() {
         guard let blank else { return }
-        let readings = DeviceReadings(device_id: device.id, dark: blank.dark, blank: ["white": blank.blank], samples: samples)
+        let readings = makeReadings(deviceID: device.id, blank: blank, samples: samples)
+        let prep = SamplePrep(mass_mg: sampleMassMg, volume_ml: sampleVolumeMl, stirred: true)
         let sent = label == LabelInfo() ? nil : label
         let thumbnail = photo.map { jpeg($0, maxSide: 240) }
         steps = [Step(icon: "paperplane", text: "Sending the readings to the server")]
         run("Analyzing…") {
-            var scan = try await Server.createScan(label: sent, readings: readings)
+            var scan = try await Server.createScan(label: sent, readings: readings, prep: prep)
             var record: TestRecord?
             let started = Date.now
             while true {
@@ -204,14 +212,15 @@ struct ContentView: View {
         }
     }
 
-    private func confirm(_ record: TestRecord) async throws -> Int {
-        let n = try await Server.confirm(record.scan.id)
+    private func confirm(_ record: TestRecord) async throws -> ConfirmResult {
+        let result = try await Server.confirm(record.scan.id)
+        guard result.held != true else { return result } // not added; nothing to mark
         if let i = history.firstIndex(where: { $0.id == record.id }) {
             history[i].scan.confirmed = true
             History.save(history)
         }
         if current?.id == record.id { current?.scan.confirmed = true }
-        return n
+        return result
     }
 
     private func readLabel() {
@@ -398,7 +407,7 @@ extension TestRecord {
 /// Full report for one test. Shown as a sheet after Analyze, and pushed from History.
 struct ReportView: View {
     let record: TestRecord
-    let confirm: (TestRecord) async throws -> Int
+    let confirm: (TestRecord) async throws -> ConfirmResult
     @State private var shareImage: Image?
     @State private var confirmNote: String?
     @State private var confirming = false
@@ -461,7 +470,12 @@ struct ReportView: View {
                             Button(confirming ? "Adding…" : "Yes, this is \(record.name)") {
                                 confirming = true
                                 Task {
-                                    do { confirmNote = "Added. This product now has \(try await confirm(record)) confirmed scans." }
+                                    do {
+                                        let r = try await confirm(record)
+                                        confirmNote = r.held == true
+                                            ? "Not added: \(r.reason ?? "this scan doesn't match the product's reference, so it was held for review.")"
+                                            : "Added. This product now has \(r.n) confirmed scans."
+                                    }
                                     catch { confirmNote = error.localizedDescription }
                                     confirming = false
                                 }
@@ -551,7 +565,7 @@ struct ShareCard: View {
 
 struct HistoryView: View {
     @Binding var records: [TestRecord]
-    let confirm: (TestRecord) async throws -> Int
+    let confirm: (TestRecord) async throws -> ConfirmResult
 
     var body: some View {
         List {
@@ -599,6 +613,8 @@ struct HistoryRow: View {
 /// Where the backend runs. Stored on the phone, so switching laptops or ngrok addresses needs no rebuild.
 struct SettingsView: View {
     @AppStorage("server") private var server = ""
+    @AppStorage("sampleMassMg") private var sampleMassMg = 500.0
+    @AppStorage("sampleVolumeMl") private var sampleVolumeMl = 50.0
     @State private var result: String?
     @Environment(\.dismiss) private var dismiss
 
@@ -618,6 +634,15 @@ struct SettingsView: View {
                 Section {
                     Button("Test connection") { Task { result = await check() } }
                     if let result { Text(result).font(.subheadline) }
+                }
+                Section {
+                    Stepper("Powder: \(Int(sampleMassMg)) mg", value: $sampleMassMg, in: 100...2000, step: 50)
+                    Stepper("Water: \(Int(sampleVolumeMl)) mL", value: $sampleVolumeMl, in: 10...100, step: 5)
+                    Button("Use the standard (500 mg in 50 mL)") { sampleMassMg = 500; sampleVolumeMl = 50 }
+                } header: {
+                    Text("Sample prep")
+                } footer: {
+                    Text("Keep the standard unless you weighed a different amount. The server rescales color and cloudiness to the standard, so scans stay comparable.")
                 }
             }
             .navigationTitle("Settings")

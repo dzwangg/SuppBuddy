@@ -1,13 +1,14 @@
 #pragma once
 #include <Arduino.h>
 
-// All LED pin mapping and switching is implemented in one module.
+// The four measurement LEDs, in the order a cycle lights them.
 class LEDController {
  public:
-  static constexpr uint8_t COUNT = 5;
+  static constexpr uint8_t COUNT = 4;
+  static constexpr int8_t NONE = -1;  // all LEDs off (dark reading)
   void begin();
   void allOff();
-  void allOn();
-  void onOnly(uint8_t index);
+  void onOnly(int8_t index);  // NONE turns everything off
   const char* name(uint8_t index) const;
+  char code(uint8_t index) const;  // protocol letter: W, R, G, B
 };

@@ -4,22 +4,21 @@
 #include <Adafruit_TCS34725.h>
 
 struct RGBReading {
-  int32_t red = 0;
-  int32_t green = 0;
-  int32_t blue = 0;
-  int32_t clear = 0;
+  float red = 0;
+  float green = 0;
+  float blue = 0;
+  float clear = 0;
 };
 
+// TCS34725 in line behind the cuvette: transmitted light in red, green, blue and clear bands.
 class RGBSensor {
  public:
   RGBSensor();
   bool begin(TwoWire& bus);
   bool available() const { return ready_; }
-  RGBReading read();
-  static RGBReading difference(const RGBReading& on,
-                               const RGBReading& off);
-  // A rough label for demonstrations; NOT a calibrated color measurement.
-  static const char* approximateColor(const RGBReading& corrected);
+  // Averages `count` consecutive integrations. Call it after the light has been steady for at least
+  // one integration time, so the first register read is already from the current light.
+  RGBReading readAveraged(uint8_t count);
 
  private:
   Adafruit_TCS34725 tcs_;
