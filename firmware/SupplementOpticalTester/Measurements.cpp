@@ -1,143 +1,71 @@
 #include "Measurements.h"
 #include "Config.h"
-#include <math.h>
 
 Measurements::Measurements(LEDController& leds, RGBSensor& rgb, LuxSensor& lux)
   : leds_(leds), rgb_(rgb), lux_(lux) {}
 
-void Measurements::csvHeader() {
-  Serial.println("timestamp_ms,led,rgb_guess,rgb_dark_r,rgb_dark_g,rgb_dark_b,rgb_dark_clear,rgb_on_r,rgb_on_g,rgb_on_b,rgb_on_clear,rgb_delta_r,rgb_delta_g,rgb_delta_b,rgb_delta_clear,tsl_dark_full,tsl_dark_ir,tsl_on_full,tsl_on_ir,tsl_on_visible,tsl_on_lux,tsl_dark_lux,tsl_lux_change");
+// "I,v3,<tcs gain>,<tcs ms>,<tsl gain>,<tsl ms>,<LED codes in cycle order>"
+void Measurements::info(const Send& send) {
+  String leds;
+  for (uint8_t i = 0; i < LEDController::COUNT; ++i) leds += leds_.code(i);
+  send("I,v3," + String(Config::TCS_GAIN_X) + "," + String(Config::TCS_INTEGRATION_MS) + "," +
+       String(Config::TSL_GAIN_X) + "," + String(Config::TSL_INTEGRATION_MS) + "," + leds + "\n");
 }
 
-void Measurements::sweepRGB() { sweep(true, false, false); }
-void Measurements::sweepLux() { sweep(false, true, false); }
-void Measurements::sweepCombinedCSV() { sweep(true, true, true); }
-
-void Measurements::sweep(bool needRgb, bool needLux, bool csv) {
-  const bool useRgb = needRgb && rgb_.available();
-  const bool useLux = needLux && lux_.available();
-  if (!useRgb && !useLux) {
-    leds_.allOff();
-    Serial.println("Requested sensor(s) unavailable. Check wiring; reset ESP32 after fixing.");
-    delay(1000);
-    return;
+bool Measurements::sensorsReady(const Send& send) {
+  if (!rgb_.available()) {
+    send("X,TCS34725 not detected on GPIO 21/22. Check its wiring, then reset the tester.\n");
+  } else if (!lux_.available()) {
+    send("X,TSL2591 not detected on GPIO 16/17. Check its wiring and solder joints, then reset the tester.\n");
+  } else {
+    return true;
   }
-
-  for (uint8_t i = 0; i < LEDController::COUNT; ++i) {
-    leds_.allOff();
-    delay(Config::SETTLE_MS);
-    RGBReading rgbDark, rgbOn, rgbDelta;
-    LuxReading luxDark, luxOn;
-    if (useRgb) rgbDark = rgb_.read();
-    if (useLux) luxDark = lux_.read();
-
-    leds_.onOnly(i);
-    delay(Config::SETTLE_MS);
-    if (useRgb) {
-      rgbOn = rgb_.read();
-      rgbDelta = RGBSensor::difference(rgbOn, rgbDark);
-    }
-    if (useLux) luxOn = lux_.read();
-    leds_.allOff();
-
-    if (csv) {
-      Serial.print(millis()); Serial.print(',');
-      Serial.print(leds_.name(i)); Serial.print(',');
-      if (useRgb) {
-        Serial.print(RGBSensor::approximateColor(rgbDelta)); Serial.print(',');
-        Serial.print(rgbDark.red); Serial.print(',');
-        Serial.print(rgbDark.green); Serial.print(',');
-        Serial.print(rgbDark.blue); Serial.print(',');
-        Serial.print(rgbDark.clear); Serial.print(',');
-        Serial.print(rgbOn.red); Serial.print(',');
-        Serial.print(rgbOn.green); Serial.print(',');
-        Serial.print(rgbOn.blue); Serial.print(',');
-        Serial.print(rgbOn.clear); Serial.print(',');
-        Serial.print(rgbDelta.red); Serial.print(',');
-        Serial.print(rgbDelta.green); Serial.print(',');
-        Serial.print(rgbDelta.blue); Serial.print(',');
-        Serial.print(rgbDelta.clear);
-      } else {
-        // 13 empty RGB fields, including the color guess.
-        for (uint8_t k=0; k<13; ++k) Serial.print(',');
-      }
-      Serial.print(',');
-      if (useLux) {
-        Serial.print(luxDark.full); Serial.print(',');
-        Serial.print(luxDark.infrared); Serial.print(',');
-        Serial.print(luxOn.full); Serial.print(',');
-        Serial.print(luxOn.infrared); Serial.print(',');
-        Serial.print(luxOn.visible); Serial.print(',');
-        if (luxOn.valid) Serial.print(luxOn.lux, 3);
-        Serial.print(',');
-        if (luxDark.valid) Serial.print(luxDark.lux, 3);
-        Serial.print(',');
-        if (luxOn.valid && luxDark.valid) Serial.print(luxOn.lux - luxDark.lux, 3);
-      } else {
-        // Eight missing TSL fields: one comma was already printed above.
-        for (uint8_t k = 0; k < 7; ++k) Serial.print(',');
-      }
-      Serial.println();
-    } else {
-      Serial.print("\n--- LED: "); Serial.print(leds_.name(i)); Serial.println(" ---");
-      if (useRgb) {
-        Serial.print("Approx detected color: ");
-        Serial.println(RGBSensor::approximateColor(rgbDelta));
-        Serial.print("RGB+C LED-on counts: ");
-        Serial.print(rgbOn.red); Serial.print(", ");
-        Serial.print(rgbOn.green); Serial.print(", ");
-        Serial.print(rgbOn.blue); Serial.print(", ");
-        Serial.println(rgbOn.clear);
-        Serial.print("RGB+C LED-off counts: ");
-        Serial.print(rgbDark.red); Serial.print(", ");
-        Serial.print(rgbDark.green); Serial.print(", ");
-        Serial.print(rgbDark.blue); Serial.print(", ");
-        Serial.println(rgbDark.clear);
-        Serial.print("RGB+C corrected change: ");
-        Serial.print(rgbDelta.red); Serial.print(", ");
-        Serial.print(rgbDelta.green); Serial.print(", ");
-        Serial.print(rgbDelta.blue); Serial.print(", ");
-        Serial.println(rgbDelta.clear);
-      }
-      if (useLux) {
-        Serial.print("TSL full / IR / visible counts: ");
-        Serial.print(luxOn.full); Serial.print(" / ");
-        Serial.print(luxOn.infrared); Serial.print(" / ");
-        Serial.println(luxOn.visible);
-        Serial.print("TSL LED-on lux: ");
-        if (luxOn.valid) Serial.println(luxOn.lux, 3);
-        else Serial.println("INVALID / SATURATED");
-        Serial.print("TSL LED-off lux: ");
-        if (luxDark.valid) Serial.println(luxDark.lux, 3);
-        else Serial.println("INVALID / SATURATED");
-        Serial.print("TSL LED-only lux change: ");
-        if (luxDark.valid && luxOn.valid)
-          Serial.println(luxOn.lux - luxDark.lux, 3);
-        else Serial.println("N/A");
-      }
-    }
-    delay(Config::BETWEEN_LIGHTS_MS);
-  }
+  send("E\n");
+  return false;
 }
 
-void Measurements::ambient() {
+// One reading with one LED on (or none). The TSL2591 integration (~120 ms) runs first; meanwhile the
+// TCS34725 keeps integrating under the same light, so its first register read is already valid.
+Reading Measurements::measure(int8_t led) {
+  leds_.onOnly(led);
+  delay(Config::LED_SETTLE_MS);
+  Reading out;
+  out.lux = lux_.read();
+  out.rgb = rgb_.readAveraged(Config::TCS_AVERAGE);
   leds_.allOff();
-  if (rgb_.available()) {
-    RGBReading r = rgb_.read();
-    Serial.print("Ambient TCS R,G,B,C: ");
-    Serial.print(r.red); Serial.print(",");
-    Serial.print(r.green); Serial.print(",");
-    Serial.print(r.blue); Serial.print(",");
-    Serial.println(r.clear);
-  } else Serial.println("Ambient TCS: NOT DETECTED");
-  if (lux_.available()) {
-    LuxReading l = lux_.read();
-    Serial.print("Ambient TSL full/IR/visible: ");
-    Serial.print(l.full); Serial.print("/");
-    Serial.print(l.infrared); Serial.print("/");
-    Serial.println(l.visible);
-    Serial.print("Ambient TSL lux: ");
-    if (l.valid) Serial.println(l.lux, 3);
-    else Serial.println("INVALID / SATURATED");
-  } else Serial.println("Ambient TSL: NOT DETECTED");
+  return out;
+}
+
+// "r,g,b,c,full,ir": TCS34725 averages (one decimal), then TSL2591 counts.
+String Measurements::values(const Reading& r) {
+  return String(r.rgb.red, 1) + "," + String(r.rgb.green, 1) + "," + String(r.rgb.blue, 1) + "," +
+         String(r.rgb.clear, 1) + "," + String(r.lux.full) + "," + String(r.lux.infrared);
+}
+
+void Measurements::blank(const Send& send) {
+  if (!sensorsReady(send)) return;
+  info(send);
+  send("D," + values(measure(LEDController::NONE)) + "\n");
+  for (uint8_t i = 0; i < LEDController::COUNT; ++i) {
+    send(String("B,") + leds_.code(i) + "," + values(measure(i)) + "\n");
+  }
+  send("E\n");
+}
+
+void Measurements::run(const Send& send, const KeepGoing& keepGoing) {
+  if (!sensorsReady(send)) return;
+  info(send);
+  const uint32_t start = millis();
+  const uint32_t length = (uint32_t)Config::RUN_SECONDS * 1000;
+  while (millis() - start < length && keepGoing()) {
+    // A dark reading every cycle lets the backend follow (and subtract) room light that drifts in.
+    uint32_t t = millis() - start;
+    send("K," + String(t) + "," + values(measure(LEDController::NONE)) + "\n");
+    for (uint8_t i = 0; i < LEDController::COUNT; ++i) {
+      t = millis() - start;
+      send("S," + String(t) + "," + leds_.code(i) + "," + values(measure(i)) + "\n");
+    }
+  }
+  leds_.allOff();
+  send("E\n");
 }

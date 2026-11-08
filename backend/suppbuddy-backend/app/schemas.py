@@ -14,50 +14,59 @@ from pydantic import BaseModel, Field
 # Device payload (ESP32 -> phone -> backend)
 # ---------------------------------------------------------------------------
 class ChannelSnapshot(BaseModel):
-    """One averaged reading of both sensors. TCS34725 gives r,g,b,c; TSL2591 gives scatter."""
+    """One averaged reading of both sensors. TCS34725 (in line) gives r,g,b,c; TSL2591 (90 deg) gives
+    scatter (its full-spectrum channel) and ir (its infrared-only channel)."""
     r: float
     g: float
     b: float
     c: float = 0.0
     scatter: float
+    ir: float | None = None
 
 
 class RawSample(BaseModel):
-    t_ms: int = Field(..., description="ms since sample was added to the cuvette")
+    t_ms: int = Field(..., description="ms since the sample run started")
     r: float
     g: float
     b: float
     c: float = 0.0
     scatter: float
-    # Which LED was on for this sample. "white" = all three RGB LEDs on together.
-    # TODO(protocol): confirm with Akshay/Kevin whether LEDs run together or cycle R->G->B.
-    led: Literal["white", "r", "g", "b"] = "white"
+    ir: float | None = None
+    # Which LED was on. "white" = the white LED (or all LEDs together on older rigs); "off" = a dark
+    # reading taken during the run (protocol v3 takes one every cycle).
+    led: Literal["white", "r", "g", "b", "off"] = "white"
     temp_c: float | None = None
 
 
 class DeviceReadings(BaseModel):
     device_id: str
     protocol: str = "v1"
-    # "white": every sample has all LEDs on, read r/g/b sensor channels.
-    # "sequential_rgb": each sample has one LED on; we use the matching sensor channel.
-    led_mode: Literal["white", "sequential_rgb"] = "white"
-    # TODO(hardware): firmware should report the gain/integration it actually used so we can
-    # reject scans taken with different settings than the fingerprint.
-    tcs_gain: int | None = None
+    # "white": every sample has the white light on; read the r/g/b sensor channels.
+    # "sequential_rgb": each sample has one colored LED on; use the matching sensor channel.
+    # "cycle" (protocol v3): every ~1.4 s the tester takes a dark reading, then one reading each under
+    #   white, red, green and blue light. Uses everything: colored LEDs for clean per-band absorbance and
+    #   scatter color, white for dissolving speed and cloudiness, dark readings to follow room light.
+    led_mode: Literal["white", "sequential_rgb", "cycle"] = "white"
+    # Sensor settings the firmware used (its "I" line). Saturation limits are derived from these, and a
+    # scan taken with settings different from the reference settings gets a warning.
+    tcs_gain: float | None = None
     tcs_integration_ms: float | None = None
-    tsl_gain: str | None = None
+    tsl_gain: float | None = None
     tsl_integration_ms: float | None = None
-    dark: ChannelSnapshot  # LEDs off
-    # Water blank, keyed by LED ("white" in white mode, "r"/"g"/"b" in sequential mode)
+    dark: ChannelSnapshot  # LEDs off, taken with the blank
+    # Water blank, keyed by LED: "white" in white mode, "r"/"g"/"b" in sequential mode, all four in cycle mode
     blank: dict[str, ChannelSnapshot]
     samples: list[RawSample]
 
 
 class SamplePrep(BaseModel):
-    # TODO(protocol): lock these with the hardware team. Crowd data is useless if prep varies.
+    """How the sample was prepared. Defaults of the locked protocol live in config.py (sample_mass_mg,
+    sample_volume_ml). When mass and volume are sent, concentration-dependent features are rescaled to
+    the standard concentration, so a heavier or lighter scoop doesn't look like a different product."""
     mass_mg: float | None = None
     volume_ml: float | None = None
     stirred: bool | None = None
+    temp_c: float | None = None  # water temperature; creatine solubility depends on it
     form: Literal["capsule_powder", "crushed_tablet", "powder", "liquid", "gummy", "other"] | None = None
 
 
@@ -73,6 +82,9 @@ class LabelIngredient(BaseModel):
 class LabelInfo(BaseModel):
     brand: str | None = None
     product_name: str | None = None
+    # Part of the product identity when there's no barcode: chocolate and vanilla of one product
+    # look completely different to the sensors, so they need separate references.
+    flavor: str | None = None
     form: str | None = None  # capsule, tablet, powder...
     serving_size: str | None = None
     ingredients: list[LabelIngredient] = []
@@ -98,6 +110,9 @@ class ScanCreate(BaseModel):
 
 class ConfirmRequest(BaseModel):
     product_id: str | None = None  # override if the label read was wrong
+    # A scan that's far from an established reference is held instead of merged (it could be a fake,
+    # a bad prep, or someone poisoning the data). force=True merges it anyway, after review.
+    force: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -113,7 +128,8 @@ class Verdict(str, Enum):
 
 class AccuracyScore(BaseModel):
     label: Literal["consistent", "borderline", "inconsistent", "insufficient_data", "not_measured"]
-    distance: float | None = None
+    distance: float | None = None  # RMS z-score across features
+    max_z: float | None = None     # largest single-feature |z|; one strong deviation is enough to flag
     reference: Literal["crowd", "class", "none"] = "none"
     reference_n: int = 0
     reference_synthetic: bool = False

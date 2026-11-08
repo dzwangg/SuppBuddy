@@ -1,8 +1,10 @@
 import CoreBluetooth
 import Observation
 
-/// The SupPal tester over BLE, using the Nordic UART Service and protocol v2 (README, "BLE contract").
-/// "b" -> dark + water-blank lines, "s" -> one sample line per second then "E", "L|..|.." -> tester screen.
+/// The SupPal tester over BLE, using the Nordic UART Service and protocol v3 (README, "BLE contract").
+/// The phone powers the tester over USB but talks to it over Bluetooth: iOS apps can't read its USB serial.
+/// "b" -> settings, dark and a water blank per LED, then "E"; "s" -> dark + white/red/green/blue
+/// readings every ~1.4 s for a minute, then "E"; "L|..|.." -> tester screen.
 @MainActor @Observable
 final class Device: NSObject {
     var status = "Starting Bluetooth…"
@@ -32,10 +34,12 @@ final class Device: NSObject {
         isReady = true
     }
 
-    func measureBlank() async throws -> (dark: Snapshot, blank: Snapshot) {
+    func measureBlank() async throws -> BlankSet {
         let r = try await Server.devReadings(profile: "vitamin_c")
-        guard let blank = r.blank["white"] else { throw AppError("Simulated readings had no blank.") }
-        return (r.dark, blank)
+        guard r.blank["white"] != nil else { throw AppError("Simulated readings had no blank.") }
+        let info = DeviceInfo(version: r.protocol, tcsGain: r.tcs_gain ?? 4, tcsIntegrationMs: r.tcs_integration_ms ?? 50,
+                              tslGain: r.tsl_gain ?? 25, tslIntegrationMs: r.tsl_integration_ms ?? 100, leds: "WRGB")
+        return BlankSet(info: info, dark: r.dark, blanks: r.blank)
     }
 
     func runSample(onSample: (Sample) -> Void) async throws -> [Sample] {
@@ -43,7 +47,7 @@ final class Device: NSObject {
         let r = try await Server.devReadings(profile: runs % 2 == 0 ? "vitamin_c" : "vitamin_c_cornstarch")
         for s in r.samples {
             onSample(s)
-            try await Task.sleep(for: .milliseconds(40))
+            try await Task.sleep(for: .milliseconds(10))
         }
         return r.samples
     }
@@ -55,27 +59,33 @@ final class Device: NSObject {
         central = CBCentralManager(delegate: self, queue: nil)
     }
 
-    /// Dark (LEDs off) and water-blank readings.
-    func measureBlank() async throws -> (dark: Snapshot, blank: Snapshot) {
-        var dark: Snapshot?, blank: Snapshot?
+    /// Settings, a dark reading, and a water blank under each LED.
+    func measureBlank() async throws -> BlankSet {
+        var info: DeviceInfo?, dark: Snapshot?, blanks: [String: Snapshot] = [:]
         for try await line in try command("b") {
-            if case .dark(let d) = line { dark = d }
-            if case .blank(let b) = line { blank = b }
-            if let dark, let blank {
-                finish(nil)
-                return (dark, blank)
+            switch line {
+            case .info(let i): info = i
+            case .dark(let d): dark = d
+            case .blank(let led, let b): blanks[led] = b
+            case .failure(let message): throw AppError(message)
+            default: break
             }
         }
-        throw AppError("Tester didn't send a blank reading.")
+        guard let dark, blanks["white"] != nil else { throw AppError("Tester didn't send a full blank reading.") }
+        return BlankSet(info: info, dark: dark, blanks: blanks)
     }
 
-    /// One sample run (about a minute on the tester). Calls onSample as each reading arrives.
+    /// One sample run (about a minute on the tester). Calls onSample as each reading arrives,
+    /// including the dark readings ("off") the tester takes every cycle.
     func runSample(onSample: (Sample) -> Void) async throws -> [Sample] {
         var samples: [Sample] = []
         for try await line in try command("s") {
-            if case .sample(let s) = line {
+            switch line {
+            case .sample(let s):
                 samples.append(s)
                 onSample(s)
+            case .failure(let message): throw AppError(message)
+            default: break
             }
         }
         return samples
@@ -173,7 +183,7 @@ extension Device: @preconcurrency CBCentralManagerDelegate, @preconcurrency CBPe
         for line in takeLines(&buffer) {
             lastLine = .now
             guard let parsed = DeviceLine(line) else {
-                finish(AppError("Unexpected line from tester: \(line). Is it running protocol v2 firmware?"))
+                finish(AppError("Unexpected line from tester: \(line). Is it running the protocol v3 firmware?"))
                 return
             }
             lines?.yield(parsed)

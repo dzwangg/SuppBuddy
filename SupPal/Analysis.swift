@@ -17,28 +17,102 @@ func takeLines(_ buffer: inout String) -> [String] {
     return lines
 }
 
-/// One line from the tester (protocol v2, see README "BLE contract").
+/// The tester's sensor settings, from its "I" line.
+struct DeviceInfo: Equatable {
+    var version: String
+    var tcsGain, tcsIntegrationMs, tslGain, tslIntegrationMs: Double
+    var leds: String // LED letters in cycle order, e.g. "WRGB"
+}
+
+/// One line from the tester (protocol v3, see README "BLE contract"). Every reading carries
+/// r,g,b,c (TCS34725, transmitted) then full,ir (TSL2591, scattered at 90°).
+///   I,v3,tcsGain,tcsMs,tslGain,tslMs,LEDS     settings
+///   D,r,g,b,c,full,ir                         dark, with the blank
+///   B,<W|R|G|B>,r,g,b,c,full,ir               water blank under one LED
+///   K,t_ms,r,g,b,c,full,ir                    dark during the run
+///   S,t_ms,<W|R|G|B>,r,g,b,c,full,ir          sample under one LED
+///   E                                         end of a command
+///   X,<message>                               the tester can't measure (e.g. a sensor isn't detected)
+/// Protocol v2 lines (white light only, no ir) are still read, for older stubs.
 enum DeviceLine: Equatable {
-    case dark(Snapshot)  // D,r,g,b,c,scatter
-    case blank(Snapshot) // B,r,g,b,c,scatter
-    case sample(Sample)  // S,t_ms,r,g,b,c,scatter
-    case end             // E
+    case info(DeviceInfo)
+    case dark(Snapshot)
+    case blank(led: String, Snapshot)
+    case sample(Sample) // led "off" for the dark readings taken during a run
+    case end
+    case failure(String)
+
+    static let ledNames: [String: String] = ["W": "white", "R": "r", "G": "g", "B": "b"]
 
     init?(_ line: String) {
-        let parts = line.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
-        let nums = parts.dropFirst().compactMap(Double.init)
-        guard nums.count == parts.count - 1 else { return nil } // every field after the tag must be a number
-        switch (parts.first ?? "", nums.count) {
-        case ("E", 0): self = .end
-        case ("D", 5): self = .dark(Snapshot(r: nums[0], g: nums[1], b: nums[2], c: nums[3], scatter: nums[4]))
-        case ("B", 5): self = .blank(Snapshot(r: nums[0], g: nums[1], b: nums[2], c: nums[3], scatter: nums[4]))
-        case ("S", 6): self = .sample(Sample(t_ms: Int(nums[0]), r: nums[1], g: nums[2], b: nums[3], c: nums[4], scatter: nums[5]))
-        default: return nil
+        let parts = line.split(separator: ",", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
+        guard let tag = parts.first, !tag.isEmpty else { return nil }
+        let rest = Array(parts.dropFirst())
+
+        /// All fields numeric, with the expected count.
+        func numbers(_ fields: [String], count: [Int]) -> [Double]? {
+            let nums = fields.compactMap(Double.init)
+            return nums.count == fields.count && count.contains(nums.count) ? nums : nil
+        }
+        func snapshot(_ n: [Double]) -> Snapshot {
+            Snapshot(r: n[0], g: n[1], b: n[2], c: n[3], scatter: n[4], ir: n.count > 5 ? n[5] : nil)
+        }
+        func sample(_ t: Double, _ n: [Double], led: String) -> Sample {
+            Sample(t_ms: Int(t), r: n[0], g: n[1], b: n[2], c: n[3], scatter: n[4], ir: n.count > 5 ? n[5] : nil, led: led)
+        }
+
+        switch tag {
+        case "E":
+            guard rest.isEmpty else { return nil }
+            self = .end
+        case "X": // the message is free text and can contain commas
+            let comma = line.firstIndex(of: ",") ?? line.endIndex
+            self = .failure(line[comma...].dropFirst().trimmingCharacters(in: .whitespaces))
+        case "I":
+            guard rest.count == 6, let n = numbers(Array(rest[1...4]), count: [4]) else { return nil }
+            self = .info(DeviceInfo(version: rest[0], tcsGain: n[0], tcsIntegrationMs: n[1], tslGain: n[2], tslIntegrationMs: n[3], leds: rest[5]))
+        case "D":
+            guard let n = numbers(rest, count: [5, 6]) else { return nil }
+            self = .dark(snapshot(n))
+        case "B":
+            if let led = rest.first.flatMap({ Self.ledNames[$0] }), let n = numbers(Array(rest.dropFirst()), count: [6]) {
+                self = .blank(led: led, snapshot(n))
+            } else if let n = numbers(rest, count: [5]) { // v2: white only
+                self = .blank(led: "white", snapshot(n))
+            } else { return nil }
+        case "K":
+            guard let n = numbers(rest, count: [7]) else { return nil }
+            self = .sample(sample(n[0], Array(n.dropFirst()), led: "off"))
+        case "S":
+            if rest.count == 8, let led = Self.ledNames[rest[1]], let t = Double(rest[0]), let n = numbers(Array(rest[2...]), count: [6]) {
+                self = .sample(sample(t, n, led: led))
+            } else if let n = numbers(rest, count: [6]) { // v2: S,t_ms,r,g,b,c,scatter under white light
+                self = .sample(sample(n[0], Array(n.dropFirst()), led: "white"))
+            } else { return nil }
+        default:
+            return nil
         }
     }
 }
 
-/// Live chart point, using the backend's formulas (app/sensors/features.py):
+/// What "Measure blank" collects: the dark reading, the water blank under each LED, and the settings.
+struct BlankSet: Equatable {
+    var info: DeviceInfo?
+    var dark: Snapshot
+    var blanks: [String: Snapshot]
+    var white: Snapshot? { blanks["white"] }
+}
+
+/// The payload the backend analyzes. Colored-LED blanks or readings mean protocol v3's cycle mode.
+func makeReadings(deviceID: String, blank: BlankSet, samples: [Sample]) -> DeviceReadings {
+    let cycle = blank.blanks.keys.contains { $0 != "white" } || samples.contains { $0.led != "white" }
+    return DeviceReadings(device_id: deviceID, protocol: cycle ? "v3" : "v1", led_mode: cycle ? "cycle" : "white",
+                          tcs_gain: blank.info?.tcsGain, tcs_integration_ms: blank.info?.tcsIntegrationMs,
+                          tsl_gain: blank.info?.tslGain, tsl_integration_ms: blank.info?.tslIntegrationMs,
+                          dark: blank.dark, blank: blank.blanks, samples: samples)
+}
+
+/// Live chart point for a white-light reading, using the backend's formulas (app/sensors/features.py):
 ///   absorbance = mean over R,G,B of -log10((I - dark) / (blank - dark))
 ///   cloudiness = (scatter - dark) / (blank - dark), so 1.0 means as clear as water.
 func livePoint(_ s: Sample, dark: Snapshot, blank: Snapshot) -> (seconds: Double, absorbance: Double, cloudiness: Double)? {

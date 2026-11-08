@@ -17,7 +17,7 @@ pip install -r requirements.txt
 cp .env.example .env            # add ANTHROPIC_API_KEY for vision + agent (optional)
 python -m scripts.seed_demo     # simulated reference scans so comparisons work today
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-pytest -q                       # 23 tests, no network or key needed
+pytest -q                       # 36 tests, no network or key needed
 ```
 
 Open http://localhost:8000/docs. Try `POST /dev/simulate?profile=vitamin_c_cornstarch` (should WARN)
@@ -47,37 +47,64 @@ iPhone app ── POST /label/extract (photos) ──► LabelInfo (user confirm
 ## The sensor math (`app/sensors/features.py`)
 
 ```
-A_c(t) = -log10( (I_c(t) - dark_c) / (blank_c - dark_c) )    c ∈ {R,G,B}   TCS34725, in line
-S(t)   = (scatter(t) - dark_s) / (scatter_blank - dark_s)    1.0 = water   TSL2591, 90°
+A_c(t) = -log10( (I_c(t) - dark_c(t)) / (blank_c - dark_c) )   c ∈ {R,G,B}   TCS34725, in line
+S(t)   = (scatter(t) - dark_s(t)) / (scatter_blank - dark_s)   1.0 = water   TSL2591, 90°
 ```
 
-Fingerprint features: `A_R, A_G, A_B, ratio_BR, ratio_GR, S_final, t90_s, plateau_noise`.
-Accuracy = RMS z-score vs. the product's confirmed scans (≤1.5 consistent, ≤3 borderline, else inconsistent).
-Fewer than 3 scans → falls back to rough ingredient-class ranges in `data/class_references.json`.
+Protocol v3 ("cycle" mode) takes a dark reading and one reading each under white, red, green and blue light
+every ~1.4 s, and the backend uses all of it:
 
-QC rejects: <10 samples, saturated channel, dead LED (blank ≈ dark), flat signal (looks like water).
-Only QC-passing, user-confirmed scans update a fingerprint.
+| Feature | From | Tells you |
+|---|---|---|
+| `A_R, A_G, A_B` | each colored LED through its matching channel (white light if that LED is too dim) | color |
+| `ratio_BR, ratio_GR` | the same | color shape, independent of how much powder went in |
+| `S_final` | white light, side sensor | cloudiness at the end: fillers, undissolved powder, natural protein haze |
+| `t90_s`, `plateau_noise` | white light, in-line sensor | dissolving speed; clumps or bubbles |
+| `scatter_exp` | blue vs red LED, side sensor | particle size: fine haze (protein) scatters blue much more (2-4); coarse grains (starch, flour) scatter every color alike (~0) |
+| `S_residual` | white light, side sensor | share of the peak cloudiness still there at the end: soluble powder ~0, insoluble filler ~1. A ratio, so the scoop size barely moves it |
+| `settle_rate` | white light, side sensor | solids still sinking at the end |
+| `S_noise` | white light, side sensor | scatter flicker: grains drifting through the beam |
 
-## Device payload contract (agree with David)
+Dark readings during the run are interpolated and subtracted at each reading's time (room-light drift), and
+`sample_prep` mass/volume rescale the color and cloudiness features to the standard 500 mg in 50 mL.
+
+**Accuracy** = z-scores vs. the product's confirmed scans: the worse of the RMS over all features (≤1.5
+consistent, ≤3 borderline) and the largest single feature (>3.5 borderline, >5 inconsistent), so a filler that
+mostly moves cloudiness isn't averaged away by the color features. Fewer than 3 scans → falls back to rough
+ingredient-class ranges in `data/class_references.json` (now including creatine).
+
+**QC rejects:** <10 samples, a saturated channel (limits derived from the integration time the tester reports),
+dead LED (blank ≈ dark), light leak (a dark reading climbing during the run), flat signal (looks like water).
+Warnings: a dim colored LED (white light used for that band), infrared rising, sensor settings different from
+the reference settings, sample prep far from the standard.
+
+**Crowd data:** only QC-passing, user-confirmed scans update a fingerprint. Once a product has 3+ scans, a
+confirmed scan that's inconsistent with them is **held** (`{"held": true}`) instead of merged; send
+`{"force": true}` to merge it after review. Products are keyed by **barcode** (valid GTIN check digit) when
+there is one, otherwise brand + name + **flavor**.
+
+## Device payload contract
 
 ```json
 {
-  "label":   { "brand": "...", "product_name": "...", "ingredients": [{"name": "...", "amount": 100, "unit": "mg"}], "lot": "..." },
+  "label":   { "brand": "...", "product_name": "...", "flavor": "...", "upc": "...", "ingredients": [{"name": "...", "amount": 100, "unit": "mg"}], "lot": "..." },
   "readings": {
-    "device_id": "esp32-01",
-    "protocol": "v1",
-    "led_mode": "white",                     // or "sequential_rgb"
-    "tcs_gain": 4, "tcs_integration_ms": 50,
-    "dark":  { "r": 300, "g": 320, "b": 280, "c": 900, "scatter": 40 },
-    "blank": { "white": { "r": 6000, "g": 7000, "b": 5000, "c": 18855, "scatter": 400 } },
-    "samples": [ { "t_ms": 0, "r": 17950, "g": 21900, "b": 14800, "c": 54000, "scatter": 410, "led": "white" } ]
+    "device_id": "esp32-SupPal",
+    "protocol": "v3",
+    "led_mode": "cycle",
+    "tcs_gain": 4, "tcs_integration_ms": 50, "tsl_gain": 25, "tsl_integration_ms": 100,
+    "dark":  { "r": 300, "g": 320, "b": 280, "c": 900, "scatter": 40, "ir": 20 },
+    "blank": { "white": { "r": 6000, "g": 7000, "b": 5000, "c": 18855, "scatter": 400, "ir": 30 },
+               "r": {...}, "g": {...}, "b": {...} },
+    "samples": [ { "t_ms": 0,   "led": "off",   "r": 301, "g": 321, "b": 279, "c": 901, "scatter": 41, "ir": 20 },
+                 { "t_ms": 285, "led": "white", "r": 5950, "g": 6930, "b": 4900, "c": 18600, "scatter": 610, "ir": 31 } ]
   },
-  "sample_prep": { "mass_mg": 100, "volume_ml": 3, "stirred": true, "form": "capsule_powder" }
+  "sample_prep": { "mass_mg": 500, "volume_ml": 50, "stirred": true }
 }
 ```
 
-`GET /dev/readings?profile=b_complex` returns a full example in exactly this shape.
-In `sequential_rgb` mode, send one blank per LED (`"blank": {"r": {...}, "g": {...}, "b": {...}}`) and tag each sample's `led`.
+`GET /dev/readings?profile=b_complex` returns a full example in exactly this shape. The older `white` and
+`sequential_rgb` modes are still accepted.
 
 ## What to change once you know more
 
@@ -85,11 +112,8 @@ Every assumption is tagged in code. `grep -rn "TODO(" app scripts data` lists th
 
 | Tag | Who to ask | File | What to change |
 |---|---|---|---|
-| `TODO(protocol)` | Akshay, Kevin | `app/schemas.py` | LEDs all-on vs. cycled R→G→B. Set `led_mode` default. |
-| `TODO(protocol)` | Akshay, Kevin | `app/schemas.py` `SamplePrep` | Lock powder mass, water volume, stir, run length. **Most important item on this list.** Bump `protocol` to `v2` if it changes after you collect data; old fingerprints won't mix. |
-| `TODO(protocol)` | Akshay, Kevin | `app/sensors/features.py` | Which LED drives the scatter reading in sequential mode (assumed green). |
-| `TODO(hardware)` | Akshay, Kevin | `app/config.py`, `.env` | `TCS_SATURATION` / `TSL_SATURATION` now match the firmware (TCS 50 ms → 21,000; TSL 100 ms → 37,000). Update them if the firmware's integration time changes (TCS max = min(65535, 1024 × cycles); TSL max = 37,888 at 100 ms, 65,535 at 200 ms+). |
-| `TODO(hardware)` | David | `app/schemas.py` | Firmware should report gain/integration so mismatched scans can be rejected. |
+| `TODO(protocol)` | Akshay, Kevin | `app/config.py` `sample_mass_mg` / `sample_volume_ml` | Confirm the standard prep (500 mg in 50 mL). **Most important item on this list.** Bump `PROTOCOL_VERSION` (v3 → v4) if it or the firmware's settings change after you collect data; old fingerprints won't mix. |
+| `TODO(calibrate)` | you, after scanning | `app/config.py` | `min_excess_scatter`, `residual_high`, `coarse_scatter_exp`, `settle_high`, `scatter_noise_high`, `light_leak_frac`: first guesses checked only on simulated data. |
 | `TODO(lcd)` | Trevor | `app/scoring/verdict.py` `lcd_message` | Display size (16×2 assumed) and wording. Codes: `TESTING CONSISTENT CHECK WARNING NO_REF BAD_SCAN`. |
 | `TODO(calibrate)` | you, after scanning | `app/config.py` | z thresholds, `std_floor`, `turbidity_high`, `plateau_noise_high`. |
 | `TODO(calibrate)` | you | `data/class_references.json` | Replace guessed ranges with real mean ± 3 std per class. |

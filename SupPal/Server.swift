@@ -3,21 +3,45 @@ import Foundation
 // Wire models for the SupPal backend (backend/suppbuddy-backend/app/schemas.py).
 // Property names match the JSON keys exactly so no key-conversion strategy can mangle them.
 
-struct Snapshot: Codable, Equatable { var r, g, b, c, scatter: Double }
+/// r,g,b,c: TCS34725 (transmitted light). scatter: TSL2591 full channel (light scattered at 90°). ir: its infrared channel.
+struct Snapshot: Codable, Equatable {
+    var r, g, b, c, scatter: Double
+    var ir: Double? = nil
+}
 
 struct Sample: Codable, Equatable {
     var t_ms: Int
     var r, g, b, c, scatter: Double
-    var led = "white"
+    var ir: Double? = nil
+    var led = "white" // white | r | g | b | off (a dark reading taken during the run)
 }
 
 struct DeviceReadings: Codable {
     var device_id: String
-    var `protocol` = "v1"
-    var led_mode = "white"
+    var `protocol` = "v3"
+    var led_mode = "cycle"
+    var tcs_gain: Double?
+    var tcs_integration_ms: Double?
+    var tsl_gain: Double?
+    var tsl_integration_ms: Double?
     var dark: Snapshot
-    var blank: [String: Snapshot] // {"white": water blank}
+    var blank: [String: Snapshot] // water blank per LED: "white", "r", "g", "b"
     var samples: [Sample]
+}
+
+/// How the sample was prepared. The server rescales color and cloudiness to its standard prep.
+struct SamplePrep: Codable, Equatable {
+    var mass_mg: Double?
+    var volume_ml: Double?
+    var stirred: Bool?
+    var temp_c: Double?
+}
+
+/// Answer to "Yes, this is that product": added to the reference, or held because it doesn't match it.
+struct ConfirmResult: Decodable {
+    var n: Int
+    var held: Bool?
+    var reason: String?
 }
 
 struct LabelIngredient: Codable, Equatable {
@@ -29,6 +53,7 @@ struct LabelIngredient: Codable, Equatable {
 struct LabelInfo: Codable, Equatable {
     var brand: String?
     var product_name: String?
+    var flavor: String? // part of the product's identity when there's no barcode
     var ingredients: [LabelIngredient] = []
     var other_ingredients: [String] = []
     var certifications: [String] = []
@@ -37,7 +62,7 @@ struct LabelInfo: Codable, Equatable {
 }
 
 struct ScanReport: Codable {
-    struct Accuracy: Codable { var label: String; var reference: String; var reference_n: Int; var reference_synthetic: Bool; var note: String }
+    struct Accuracy: Codable { var label: String; var reference: String; var reference_n: Int; var reference_synthetic: Bool; var note: String; var max_z: Double? }
     struct Quality: Codable { var label: String; var issues: [String] }
     struct Finding: Codable { var text: String; var severity: String?; var url: String? }
     struct Reputability: Codable { var label: String; var score: Int?; var findings: [Finding] }
@@ -118,26 +143,25 @@ enum Server {
         return try JSONDecoder().decode(LabelInfo.self, from: try await send(req).data)
     }
 
-    static func createScan(label: LabelInfo?, readings: DeviceReadings) async throws -> Scan {
-        struct Body: Encodable { var label: LabelInfo?; var readings: DeviceReadings }
-        return try await post("/scans", Body(label: label, readings: readings))
+    static func createScan(label: LabelInfo?, readings: DeviceReadings, prep: SamplePrep?) async throws -> Scan {
+        struct Body: Encodable { var label: LabelInfo?; var readings: DeviceReadings; var sample_prep: SamplePrep? }
+        return try await post("/scans", Body(label: label, readings: readings, sample_prep: prep))
     }
 
     static func scan(_ id: String) async throws -> Scan {
         try JSONDecoder().decode(Scan.self, from: try await send(request("/scans/\(id)")).data)
     }
 
-    /// Adds this scan to the crowd reference for its product. Returns how many confirmed scans it now has.
-    static func confirm(_ id: String) async throws -> Int {
-        struct Confirmed: Decodable { var n: Int }
+    /// Adds this scan to the crowd reference for its product, unless it's far from an established
+    /// reference: then the server holds it for review and says why.
+    static func confirm(_ id: String) async throws -> ConfirmResult {
         struct Empty: Encodable {}
-        let c: Confirmed = try await post("/scans/\(id)/confirm", Empty())
-        return c.n
+        return try await post("/scans/\(id)/confirm", Empty())
     }
 
     /// Simulated device readings from the backend's simulator (used by the iOS Simulator's fake tester).
     static func devReadings(profile: String) async throws -> DeviceReadings {
-        try JSONDecoder().decode(DeviceReadings.self, from: try await send(request("/dev/readings?profile=\(profile)")).data)
+        try JSONDecoder().decode(DeviceReadings.self, from: try await send(request("/dev/readings?profile=\(profile)&led_mode=cycle")).data)
     }
 
     private static func post<T: Decodable>(_ path: String, _ body: some Encodable) async throws -> T {

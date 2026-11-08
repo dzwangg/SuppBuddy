@@ -1,6 +1,6 @@
 """Seed crowd fingerprints so the demo has references to compare against.
 
-  python -m scripts.seed_demo              # simulated scans (marked synthetic)
+  python -m scripts.seed_demo              # simulated scans (marked synthetic), protocol v3 cycles
   python -m scripts.seed_demo --runs 8
 
 TODO(calibrate): this is a stopgap. Before judging, replace with REAL rig scans:
@@ -18,7 +18,7 @@ from app.fingerprints import update_fingerprint
 from app.pipeline import run_scan
 from app.schemas import ScanCreate
 
-GENUINE = ["b_complex", "vitamin_c", "iron", "protein"]
+GENUINE = ["b_complex", "vitamin_c", "iron", "protein", "creatine"]
 
 
 async def main(runs: int) -> None:
@@ -37,7 +37,7 @@ async def main(runs: int) -> None:
             with session() as s:
                 scan = s.get(Scan, sid)
                 if scan.qc.get("ok") and scan.product_id:
-                    update_fingerprint(s, scan.product_id, scan.features, "v1", synthetic=True)
+                    update_fingerprint(s, scan.product_id, scan.features, body.readings.protocol, synthetic=True)
                     scan.confirmed = True
         print(f"seeded {profile}: {runs} scans")
 

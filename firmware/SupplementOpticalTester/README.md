@@ -1,90 +1,69 @@
-# ESP32 Supplement Optical Tester
+# SupPal optical tester firmware
 
-A modular Arduino IDE project for the **five discrete LEDs**, **TCS34725 color sensor**, and **TSL2591 lux sensor** used in the optical supplement-screening prototype.
+Firmware for the cuvette rig: four LEDs (white, red, green, blue), a **TCS34725** color sensor in line behind
+the cuvette (transmitted light) and a **TSL2591** light sensor at 90° (scattered light). It speaks **Bluetooth
+protocol v3** to the iPhone app (repo root README, "BLE contract"); the phone powers it over USB-C.
+Readings are raw optical counts for screening, not a validated chemical or safety measurement.
 
-> **Status:** standalone bench/calibration firmware. It talks over **USB Serial only** — it does not yet implement the BLE protocol the SupPal app expects (see the repo root `README.md`; `firmware-stub/suppal_stub` provides that with fake readings). Readings are raw optical counts for prototyping, not a validated chemical or safety measurement.
-
-The code is organized so that the LED, RGB sensor, and lux sensor logic each lives in exactly one pair of source files. There is **one `setup()` and one `loop()`**, in `SupplementOpticalTester.ino`, so Arduino IDE compiles all tabs together without duplicate-function errors.
-
-## Open and upload
+## Upload
 
 1. Keep the `SupplementOpticalTester/` folder intact (Arduino requires the folder name to match the `.ino`).
-2. Open `firmware/SupplementOpticalTester/SupplementOpticalTester.ino` in Arduino IDE. Its `.h` and `.cpp` siblings will appear as tabs.
-3. In Library Manager, install **Adafruit TCS34725**, **Adafruit TSL2591 Library**, **Adafruit Unified Sensor**, and **Adafruit BusIO** (dependencies may auto-install). `Wire` is built in.
-4. Select **ESP32 Dev Module** (for a classic ESP32-WROOM-32 board), select its COM port, and upload.
-5. Open **Serial Monitor at 115200 baud**. Choose **Newline** in the line-ending selector; type a command and press Enter.
+2. Open `SupplementOpticalTester.ino` in Arduino IDE. The `.h`/`.cpp` files appear as tabs.
+3. Boards Manager: install **esp32 by Espressif Systems**. Library Manager: install **Adafruit TCS34725**,
+   **Adafruit TSL2591 Library**, **Adafruit Unified Sensor** and **Adafruit BusIO**.
+4. Select **ESP32 Dev Module** and the board's port, then upload. Or from a terminal:
+   `arduino-cli compile --upload -p <port> --fqbn esp32:esp32:esp32 firmware/SupplementOpticalTester`
+5. Unplug it from the computer and plug it into the iPhone. The app connects by itself.
 
-The LEDs chase automatically after boot, so you can see the LED controller working without typing anything.
+## Bench test (Serial Monitor, 115200 baud, "Newline")
 
-## Serial Monitor commands
-
-| Command | What it does | Uses |
-|---|---|---|
-| `led` | Five LEDs flash in sequence | LEDController only |
-| `on` | All five LEDs stay on | LEDController only |
-| `off` | All five LEDs off | LEDController only |
-| `rgb` | Cycle each LED; show TCS34725 ambient, illuminated, corrected RGBC counts and approximate color | LED + RGBSensor |
-| `lux` | Cycle each LED; show TSL2591 full, IR, visible counts, lux and LED-off/LED-on difference | LED + LuxSensor |
-| `scan` | Cycle each LED; output **CSV rows** with BOTH sensors (and one CSV header on mode entry) | All modules |
-| `ambient` | LEDs off; periodically show each available sensor's background measurements | Both sensors |
-| `status` | Report detected sensor availability | Both sensors |
-| `help` | Print command menu | Main sketch |
-
-If only one sensor is detected, `rgb` or `lux` still works independently. `scan` logs whichever sensor is available, leaving missing fields blank. Reconnect wiring and reset the ESP32 to retry initialization.
-
-## Wiring — 38-pin classic ESP32 DevKit (ESP32-WROOM)
-
-Each standard, low-current, two-legged LED: **ESP32 GPIO → its own 330 Ω resistor → LED anode (+)**; **LED cathode (−) → common ESP32 GND**.
-
-| Component | ESP32 pin |
+| Command | What it does |
 |---|---|
-| Red LED | GPIO 25 |
-| Green LED | GPIO 26 |
-| Yellow LED | GPIO 32 |
-| Blue LED | GPIO 27 |
-| White LED | GPIO 33 |
-| TCS34725 SDA | GPIO 21 |
-| TCS34725 SCL | GPIO 22 |
-| TSL2591 SDA | GPIO 16 |
-| TSL2591 SCL | GPIO 17 |
-| Both sensor VIN | 3V3, assuming breakout accepts 3.3 V at VIN |
-| Both sensor GND | GND |
+| `status` | Which sensors were detected, and whether a phone is connected |
+| `led` | Lights each LED for half a second (wiring check) |
+| `b` | Blank: settings line, a dark reading, then a water reading under each LED |
+| `s` | A 60 s sample run, printing the same lines the phone receives |
+| `i` | The settings line |
+| `help` | Command list |
 
-**Why two I²C buses?** TCS34725 and TSL2591 both have address `0x29`. The classic ESP32 supports bus 0 (`Wire`) and bus 1 (`TwoWire(1)`), allowing simultaneous use. GPIO 16/17 may be unavailable on some ESP32 variants (e.g. certain WROVER modules): inspect your actual board.
+Every reading line ends with `r,g,b,c,full,ir`: the TCS34725 counts (averaged over 3 integrations), then
+the TSL2591's full-spectrum and infrared counts. With clean water in a closed box, each LED's `B` line should
+be well above the `D` line, no channel should be near its ceiling (21,504 for the TCS34725 at 50 ms; 37,888 for
+the TSL2591 at 100 ms), and `ir` should stay close to the dark value.
 
-Sensor breakouts need soldered header connections and I²C pull-ups. Adafruit-style modules generally include pull-ups. Do not connect either sensor to 5 V GPIO logic. Do not connect a high-power LED module directly to an ESP32 GPIO.
+## Wiring
 
-## Source layout
+The pin table is in the repo root README (one table for everyone); `Config.h` must match it. Each LED:
+GPIO → its own 330 Ω resistor → LED long leg; short leg → GND. Tie the TCS34725's `LED` pin to GND so its
+white LED stays off (the firmware also turns it off on boards where it's wired to `INT`).
+
+## How a reading works
+
+`Measurements::measure()` switches one LED on (or none, for dark), reads the TSL2591 (one 100 ms integration,
+about 120 ms), then averages three TCS34725 integrations, which by then were all taken under the same light.
+About 285 ms per reading; a cycle (dark + four LEDs) is about 1.4 s, so a 60 s run gives ~42 cycles.
+
+Gains and integration times are fixed in `Config.h` and reported to the app in the `I` line. Change them only
+together with the backend's reference settings (`REF_*` in its `.env`), or new scans won't compare with old ones.
+
+## Files
 
 | File | Responsibility |
 |---|---|
-| `SupplementOpticalTester.ino` | Program entry point and serial command mode selection |
-| `Config.h` | Configurable SDA/SCL pins, timing, baud rate |
-| `LEDController.h/.cpp` | Pin mapping, one-at-a-time/on/off control of five LEDs |
-| `RGBSensor.h/.cpp` | TCS34725 library setup, RGBC reads, ambient subtraction, approximate color label |
-| `LuxSensor.h/.cpp` | TSL2591 setup, full/IR/visible/lux data, validity handling |
-| `Measurements.h/.cpp` | Shared dark/on measurement cycle, per-sensor output, combined CSV |
+| `SupplementOpticalTester.ino` | Setup, Bluetooth and Serial command handling |
+| `Config.h` | Pins, sensor settings, timing |
+| `LEDController.*` | The four LEDs, in cycle order (W, R, G, B) |
+| `RGBSensor.*` | TCS34725 setup and averaged reads |
+| `LuxSensor.*` | TSL2591 setup and full/infrared reads |
+| `Measurements.*` | The protocol v3 sequences (blank, run) and line format |
+| `BleLink.*` | Nordic UART Service over Bluetooth LE |
 
-## CSV fields (`scan` mode)
+## Troubleshooting
 
-`timestamp_ms,led,rgb_guess,rgb_dark_r,rgb_dark_g,rgb_dark_b,rgb_dark_clear,rgb_on_r,rgb_on_g,rgb_on_b,rgb_on_clear,rgb_delta_r,rgb_delta_g,rgb_delta_b,rgb_delta_clear,tsl_dark_full,tsl_dark_ir,tsl_on_full,tsl_on_ir,tsl_on_visible,tsl_on_lux,tsl_dark_lux,tsl_lux_change`
-
-Dark means the five controlled LEDs were off. `rgb_delta_*` is **LED-on minus LED-off**, which can be negative when there is noise/drift. A `tsl_lux_change` of zero or negative is not an error by itself; geometry or noise can explain it. The lux figure depends on the sensor's wavelength sensitivity and is not a chemical measurement. `rgb_guess` is approximate and may mislabel white/yellow/light-blue until calibrated.
-
-**Measurement caveat:** The two sensors are read sequentially, not at the exact same instant. Keep the LED steady while both reads complete. For useful comparisons, maintain identical sample distance, geometry, stirring, temperature, sample mass, water volume and integration/gain settings. For quantitative tests use a water blank and LED-off backgrounds; do not assume optical similarity proves chemical identity, purity, safety or protein content.
-
-## Common troubleshooting
-
-- **`Adafruit_TCS34725.h` missing:** install **Adafruit TCS34725** from Arduino Library Manager.
-- **`Adafruit_TSL2591.h` missing:** install **Adafruit TSL2591 Library**.
-- **`Adafruit_Sensor.h` missing:** install **Adafruit Unified Sensor**.
-- **`Adafruit_I2CDevice.h` missing:** install **Adafruit BusIO**.
-- **TSL not detected:** verify separate SDA GPIO16/SCL GPIO17 bus, power, ground, and solder joints; temporarily test alone on known-working GPIO21/22 with TCS disconnected.
-- **No serial output:** verify the COM port, 115200 baud, and press EN/RESET.
-- **White TCS board illumination:** if your breakout has an onboard white LED, cover or disable it as directed for your exact breakout (some versions require a physical LED-to-INT connection to control it through software).
-- **TSL saturating:** change `TSL2591_GAIN_MED` to `TSL2591_GAIN_LOW` in `LuxSensor.cpp` and re-upload.
-
-## API references
-
-- https://github.com/adafruit/Adafruit_TCS34725
-- https://github.com/adafruit/Adafruit_TSL2591_Library
+- **App says a sensor isn't detected:** check that sensor's SDA/SCL pair, power, ground and solder joints
+  (swapping SDA and SCL is the usual mistake), then press the board's EN/reset button.
+- **A `B` line barely above `D`:** that LED is reversed, has no resistor path, or isn't aimed at the cuvette.
+  A dim blue LED is OK: the backend falls back to white light for that color and notes it.
+- **Scan fails with "light_leak":** room light is getting into the box; close it.
+- **TSL2591 counts at the ceiling:** change `TSL_GAIN` to `TSL2591_GAIN_LOW` and `TSL_GAIN_X` to 1 in
+  `Config.h`, and set `REF_TSL_GAIN=1` in the backend's `.env`.

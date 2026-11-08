@@ -26,8 +26,15 @@
       "id": "protein",
       "name": "Protein powder",
       "keywords": ["whey", "casein", "protein isolate", "pea protein"],
-      "why": "Protein dispersions are colloidal, so scatter is high.",
-      "ranges": {"S_final": [2.5, 60.0]}
+      "why": "Protein dispersions are colloidal, so scatter is high, and the particles are fine, so blue scatters more than red.",
+      "ranges": {"S_final": [2.5, 60.0], "scatter_exp": [1.2, 5.0]}
+    },
+    {
+      "id": "creatine",
+      "name": "Creatine monohydrate",
+      "keywords": ["creatine monohydrate", "creatine", "creapure"],
+      "why": "Creatine is colorless and dissolves fully at the standard 10 g/L (its limit is about 17 g/L at 20 C), so it should end almost as clear as water with little of its initial cloudiness left.",
+      "ranges": {"A_R": [-0.05, 0.08], "A_G": [-0.05, 0.08], "A_B": [-0.05, 0.10], "S_final": [0.8, 1.6], "S_residual": [0.0, 0.35]}
     },
     {
       "id": "melatonin",
