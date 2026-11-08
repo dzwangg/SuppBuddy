@@ -1,4 +1,4 @@
-// SupPal BLE test stub for a bare ESP32: no sensors needed. Sends fake readings in protocol v3 so the
+// SuppBuddy BLE test stub for a bare ESP32: no sensors needed. Sends fake readings in protocol v3 so the
 // iPhone app and backend can be tested before the optics are wired. The real firmware lives in
 // firmware/SupplementOpticalTester and speaks exactly the same protocol (repo README, "BLE contract").
 //
@@ -15,7 +15,7 @@
 #define RX_UUID      "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"  // app -> ESP32
 #define TX_UUID      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"  // ESP32 -> app
 
-const int RUN_SECONDS = 60;
+const int RUN_SECONDS = 30;
 const char LEDS[4] = {'W', 'R', 'G', 'B'};
 const float WAVELENGTH[4] = {525, 625, 525, 465};  // nm; white treated like green for scatter
 
@@ -84,7 +84,7 @@ class ServerCallbacks : public BLEServerCallbacks {
 
 void setup() {
   Serial.begin(115200);
-  BLEDevice::init("SupPal");
+  BLEDevice::init("SuppBuddy");
   BLEDevice::setMTU(185);  // each line must fit in one notification
   BLEServer *server = BLEDevice::createServer();
   server->setCallbacks(new ServerCallbacks());
@@ -96,7 +96,7 @@ void setup() {
   BLEDevice::getAdvertising()->addServiceUUID(SERVICE_UUID);
   BLEDevice::getAdvertising()->setScanResponse(true);
   BLEDevice::startAdvertising();
-  Serial.println("SupPal stub (protocol v3) advertising");
+  Serial.println("SuppBuddy stub (protocol v3) advertising");
 }
 
 void loop() {
@@ -113,9 +113,11 @@ void loop() {
   } else if (c == 's') {
     send(info);
     unsigned long start = millis();
-    while (millis() - start < RUN_SECONDS * 1000UL) {
+    unsigned long cycleStart = 0;
+    while (cycleStart < RUN_SECONDS * 1000UL) {  // like the tester: the last cycle starts at or after RUN_SECONDS
+      cycleStart = millis() - start;
       fakeDark(v);
-      send("K," + String(millis() - start) + values(v) + "\n");
+      send("K," + String(cycleStart) + values(v) + "\n");
       delay(270);
       for (int i = 0; i < 4; i++) {
         unsigned long t = millis() - start;

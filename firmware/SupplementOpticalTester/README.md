@@ -1,4 +1,4 @@
-# SupPal optical tester firmware
+# SuppBuddy optical tester firmware
 
 Firmware for the cuvette rig: four LEDs (white, red, green, blue), a **TCS34725** color sensor in line behind
 the cuvette (transmitted light) and a **TSL2591** light sensor at 90° (scattered light). It speaks **Bluetooth
@@ -10,7 +10,7 @@ Readings are raw optical counts for screening, not a validated chemical or safet
 1. Keep the `SupplementOpticalTester/` folder intact (Arduino requires the folder name to match the `.ino`).
 2. Open `SupplementOpticalTester.ino` in Arduino IDE. The `.h`/`.cpp` files appear as tabs.
 3. Boards Manager: install **esp32 by Espressif Systems**. Library Manager: install **Adafruit TCS34725**,
-   **Adafruit TSL2591 Library**, **Adafruit Unified Sensor** and **Adafruit BusIO**.
+   **Adafruit TSL2591 Library**, **Adafruit Unified Sensor**, **Adafruit BusIO** and **LiquidCrystal I2C**.
 4. Select **ESP32 Dev Module** and the board's port, then upload. Or from a terminal:
    `arduino-cli compile --upload -p <port> --fqbn esp32:esp32:esp32 firmware/SupplementOpticalTester`
 5. Unplug it from the computer and plug it into the iPhone. The app connects by itself.
@@ -19,10 +19,10 @@ Readings are raw optical counts for screening, not a validated chemical or safet
 
 | Command | What it does |
 |---|---|
-| `status` | Which sensors were detected, and whether a phone is connected |
+| `status` | Which sensors and screen were detected, and whether a phone is connected |
 | `led` | Lights each LED for half a second (wiring check) |
 | `b` | Blank: settings line, a dark reading, then a water reading under each LED |
-| `s` | A 60 s sample run, printing the same lines the phone receives |
+| `s` | A 30 s sample run, printing the same lines the phone receives |
 | `i` | The settings line |
 | `help` | Command list |
 
@@ -41,7 +41,7 @@ white LED stays off (the firmware also turns it off on boards where it's wired t
 
 `Measurements::measure()` switches one LED on (or none, for dark), reads the TSL2591 (one 100 ms integration,
 about 120 ms), then averages three TCS34725 integrations, which by then were all taken under the same light.
-About 285 ms per reading; a cycle (dark + four LEDs) is about 1.4 s, so a 60 s run gives ~42 cycles.
+About 285 ms per reading; a cycle (dark + four LEDs) is about 1.4 s, so a 30 s run gives ~22 cycles.
 
 Gains and integration times are fixed in `Config.h` and reported to the app in the `I` line. Change them only
 together with the backend's reference settings (`REF_*` in its `.env`), or new scans won't compare with old ones.

@@ -25,6 +25,21 @@ vs `profile=vitamin_c` (should be CONSISTENT).
 
 For the phone to reach your laptop on the same wifi use your LAN IP, or `ngrok http 8000`.
 
+## Hosting it online (Railway)
+
+The `Dockerfile` here runs one always-on server process (scans finish in background tasks inside it, so
+serverless hosts that freeze between requests don't fit). The database must live on a persistent volume.
+
+1. railway.com → New Project → Deploy from GitHub repo → this repo.
+2. Service → Settings → Root Directory: `backend/suppbuddy-backend` (Railway finds the Dockerfile).
+3. Variables: `ANTHROPIC_API_KEY` = your key, `DATABASE_URL` = `sqlite:////data/suppbuddy.db`.
+4. Add a Volume to the service, mounted at `/data`.
+5. Settings → Networking → Generate Domain. Check `https://<domain>/health`.
+6. Optional demo references: open the service's shell and run `python -m scripts.seed_demo`.
+7. In the app: Settings → Server → `https://<domain>`.
+
+Tested locally with `docker build` + a volume: data survives restarts.
+
 ## How a scan flows
 
 ```
@@ -89,7 +104,7 @@ there is one, otherwise brand + name + **flavor**.
 {
   "label":   { "brand": "...", "product_name": "...", "flavor": "...", "upc": "...", "ingredients": [{"name": "...", "amount": 100, "unit": "mg"}], "lot": "..." },
   "readings": {
-    "device_id": "esp32-SupPal",
+    "device_id": "esp32-SuppBuddy",
     "protocol": "v3",
     "led_mode": "cycle",
     "tcs_gain": 4, "tcs_integration_ms": 50, "tsl_gain": 25, "tsl_integration_ms": 100,

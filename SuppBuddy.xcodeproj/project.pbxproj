@@ -7,80 +7,80 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0C51085E3308FC41B14B6EF6 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AD16D4694CB04A8E6F44DFB /* Server.swift */; };
-		5EA06355EDDB1104048F03E2 /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E77487A5D6626598E0A85A3 /* Device.swift */; };
-		8783B7B1842C06349B8BB524 /* Analysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE44B472EE37F24B929F5495 /* Analysis.swift */; };
-		9F92975EF68DE3FB3B2B2CE7 /* SupPalApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 221BC77247D4B18159CF26F9 /* SupPalApp.swift */; };
-		D06455CDB29D7495D2F3B325 /* NIH.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F6BAC1BA4A85E628493599 /* NIH.swift */; };
-		DBA0F58DE7C7EEF7F332DF27 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45656812968D6ED2C96B5092 /* ContentView.swift */; };
+		0732AC5C4AC752A17A10052F /* NIH.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FE57C6B01E476CC9F8E795B /* NIH.swift */; };
+		16B7FCCFAB7E279D37CD27A9 /* SuppBuddyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09C2D341C02F175E2BA7B9C4 /* SuppBuddyApp.swift */; };
+		2F404C05F518B474C2DC17B2 /* Analysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8BDA3581541F21AC1604BBB /* Analysis.swift */; };
+		5E8BA6DEBD95F6748EDC3F24 /* Server.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3059DD892FE5CAE290A24332 /* Server.swift */; };
+		E12C1D92AF3A8ECAA9D0C5DF /* Device.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7982D53A4331B7A9307F90A0 /* Device.swift */; };
+		FF1B4A0D902698E50B04073F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BE3DED83D57AFDEE3775B8A /* ContentView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		05F6BAC1BA4A85E628493599 /* NIH.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NIH.swift; sourceTree = "<group>"; };
-		221BC77247D4B18159CF26F9 /* SupPalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupPalApp.swift; sourceTree = "<group>"; };
-		3AD16D4694CB04A8E6F44DFB /* Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
-		45656812968D6ED2C96B5092 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		6E77487A5D6626598E0A85A3 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
-		A39B427DE46B24BCEC3BF29E /* SupPal.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SupPal.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		F1EC1880F7F33982FE5F6369 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		FE44B472EE37F24B929F5495 /* Analysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analysis.swift; sourceTree = "<group>"; };
+		09C2D341C02F175E2BA7B9C4 /* SuppBuddyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuppBuddyApp.swift; sourceTree = "<group>"; };
+		3059DD892FE5CAE290A24332 /* Server.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Server.swift; sourceTree = "<group>"; };
+		6BE3DED83D57AFDEE3775B8A /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		7982D53A4331B7A9307F90A0 /* Device.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Device.swift; sourceTree = "<group>"; };
+		7EC35F4E05A69CB7BDC3F189 /* SuppBuddy.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SuppBuddy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7FE57C6B01E476CC9F8E795B /* NIH.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NIH.swift; sourceTree = "<group>"; };
+		C0EDACB7173CE065CA49AA8B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C8BDA3581541F21AC1604BBB /* Analysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Analysis.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
-		680988DCA8181512684CEF0C = {
+		24A806FCD88A80944D7FA2C8 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				BF0046E9E3EEFDF7F9AD1C1A /* SupPal */,
-				E3C19C39FC30B59278770F69 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		BF0046E9E3EEFDF7F9AD1C1A /* SupPal */ = {
-			isa = PBXGroup;
-			children = (
-				FE44B472EE37F24B929F5495 /* Analysis.swift */,
-				45656812968D6ED2C96B5092 /* ContentView.swift */,
-				6E77487A5D6626598E0A85A3 /* Device.swift */,
-				F1EC1880F7F33982FE5F6369 /* Info.plist */,
-				05F6BAC1BA4A85E628493599 /* NIH.swift */,
-				3AD16D4694CB04A8E6F44DFB /* Server.swift */,
-				221BC77247D4B18159CF26F9 /* SupPalApp.swift */,
-			);
-			path = SupPal;
-			sourceTree = "<group>";
-		};
-		E3C19C39FC30B59278770F69 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A39B427DE46B24BCEC3BF29E /* SupPal.app */,
+				7EC35F4E05A69CB7BDC3F189 /* SuppBuddy.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		62ED5AF3C421FF3ED44DA637 = {
+			isa = PBXGroup;
+			children = (
+				FD8A13C658A9AE2F07BBBB80 /* SuppBuddy */,
+				24A806FCD88A80944D7FA2C8 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FD8A13C658A9AE2F07BBBB80 /* SuppBuddy */ = {
+			isa = PBXGroup;
+			children = (
+				C8BDA3581541F21AC1604BBB /* Analysis.swift */,
+				6BE3DED83D57AFDEE3775B8A /* ContentView.swift */,
+				7982D53A4331B7A9307F90A0 /* Device.swift */,
+				C0EDACB7173CE065CA49AA8B /* Info.plist */,
+				7FE57C6B01E476CC9F8E795B /* NIH.swift */,
+				3059DD892FE5CAE290A24332 /* Server.swift */,
+				09C2D341C02F175E2BA7B9C4 /* SuppBuddyApp.swift */,
+			);
+			path = SuppBuddy;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		35D32A32D2F8A39EF77020AF /* SupPal */ = {
+		3A5CED41A63AF1BB6301884F /* SuppBuddy */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = CA2974C7F131C2E5587067A2 /* Build configuration list for PBXNativeTarget "SupPal" */;
+			buildConfigurationList = 68A39A45B56687D1FF94D834 /* Build configuration list for PBXNativeTarget "SuppBuddy" */;
 			buildPhases = (
-				F11B19928519E49614211248 /* Sources */,
+				41816B3A29D6669EE8D815DD /* Sources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = SupPal;
+			name = SuppBuddy;
 			packageProductDependencies = (
 			);
-			productName = SupPal;
-			productReference = A39B427DE46B24BCEC3BF29E /* SupPal.app */;
+			productName = SuppBuddy;
+			productReference = 7EC35F4E05A69CB7BDC3F189 /* SuppBuddy.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		FCAE6F8935A19340A3E28EB1 /* Project object */ = {
+		36F3BC8EDD7CA21F69CFF425 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
@@ -88,43 +88,43 @@
 				TargetAttributes = {
 				};
 			};
-			buildConfigurationList = AF073D80B941F3F3DC925BD6 /* Build configuration list for PBXProject "SupPal" */;
+			buildConfigurationList = 37485E8FFA81B7CC0642A6E9 /* Build configuration list for PBXProject "SuppBuddy" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
 				en,
 			);
-			mainGroup = 680988DCA8181512684CEF0C;
+			mainGroup = 62ED5AF3C421FF3ED44DA637;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
-			productRefGroup = E3C19C39FC30B59278770F69 /* Products */;
+			productRefGroup = 24A806FCD88A80944D7FA2C8 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				35D32A32D2F8A39EF77020AF /* SupPal */,
+				3A5CED41A63AF1BB6301884F /* SuppBuddy */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
-		F11B19928519E49614211248 /* Sources */ = {
+		41816B3A29D6669EE8D815DD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8783B7B1842C06349B8BB524 /* Analysis.swift in Sources */,
-				DBA0F58DE7C7EEF7F332DF27 /* ContentView.swift in Sources */,
-				5EA06355EDDB1104048F03E2 /* Device.swift in Sources */,
-				D06455CDB29D7495D2F3B325 /* NIH.swift in Sources */,
-				0C51085E3308FC41B14B6EF6 /* Server.swift in Sources */,
-				9F92975EF68DE3FB3B2B2CE7 /* SupPalApp.swift in Sources */,
+				2F404C05F518B474C2DC17B2 /* Analysis.swift in Sources */,
+				FF1B4A0D902698E50B04073F /* ContentView.swift in Sources */,
+				E12C1D92AF3A8ECAA9D0C5DF /* Device.swift in Sources */,
+				0732AC5C4AC752A17A10052F /* NIH.swift in Sources */,
+				5E8BA6DEBD95F6748EDC3F24 /* Server.swift in Sources */,
+				16B7FCCFAB7E279D37CD27A9 /* SuppBuddyApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		442D43F6BC87B10370D0095A /* Release */ = {
+		3CA9C81AA63BF399EBD2165D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -180,7 +180,25 @@
 			};
 			name = Release;
 		};
-		609ECD3FF33C9BA5D99F703B /* Debug */ = {
+		98E5A1EA817829ACAFE4157C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SuppBuddy/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.suppbuddy.SuppBuddy;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		BAE1E4EA87CF66A463F6350C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -243,64 +261,46 @@
 			};
 			name = Debug;
 		};
-		9E93AD271EB76D54A734D36E /* Debug */ = {
+		FE714CD85AA4BC81AED21A3C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = SupPal/Info.plist;
+				INFOPLIST_FILE = SuppBuddy/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.suppal.SupPal;
+				PRODUCT_BUNDLE_IDENTIFIER = com.suppbuddy.SuppBuddy;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
 		};
-		DCA802B5A85A178224515879 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = SupPal/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.suppal.SupPal;
-				SDKROOT = iphoneos;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 1;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AF073D80B941F3F3DC925BD6 /* Build configuration list for PBXProject "SupPal" */ = {
+		37485E8FFA81B7CC0642A6E9 /* Build configuration list for PBXProject "SuppBuddy" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				609ECD3FF33C9BA5D99F703B /* Debug */,
-				442D43F6BC87B10370D0095A /* Release */,
+				BAE1E4EA87CF66A463F6350C /* Debug */,
+				3CA9C81AA63BF399EBD2165D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
-		CA2974C7F131C2E5587067A2 /* Build configuration list for PBXNativeTarget "SupPal" */ = {
+		68A39A45B56687D1FF94D834 /* Build configuration list for PBXNativeTarget "SuppBuddy" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				9E93AD271EB76D54A734D36E /* Debug */,
-				DCA802B5A85A178224515879 /* Release */,
+				FE714CD85AA4BC81AED21A3C /* Debug */,
+				98E5A1EA817829ACAFE4157C /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = FCAE6F8935A19340A3E28EB1 /* Project object */;
+	rootObject = 36F3BC8EDD7CA21F69CFF425 /* Project object */;
 }

@@ -2,4 +2,5 @@ Secrets.xcconfig
 xcuserdata/
 DerivedData/
 build/
+firmware-backups/
 .DS_Store

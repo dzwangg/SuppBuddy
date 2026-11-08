@@ -1,4 +1,4 @@
-# SupPal
+# SuppBuddy
 
 A pocket supplement tester: an ESP32 cuvette rig measures how a dissolved sample absorbs and scatters
 light, the iPhone app collects the readings and the label, and the backend scores them against other
@@ -6,7 +6,7 @@ scans of the same product and against public records. **Code sets the verdict; C
 
 | Folder | What |
 |---|---|
-| `SupPal/` | SwiftUI iPhone app (iOS 17+) |
+| `SuppBuddy/` | SwiftUI iPhone app (iOS 17+) |
 | `backend/suppbuddy-backend/` | FastAPI server: sensor features, crowd fingerprints, FDA/NIH lookups, verdict, Claude explanation ([README](backend/suppbuddy-backend/README.md)) |
 | `firmware/SupplementOpticalTester/` | Tester firmware: real sensors, Bluetooth protocol v3 ([README](firmware/SupplementOpticalTester/README.md)) |
 | `firmware-stub/` | Same protocol with fake readings, for testing the app on a bare ESP32 |
@@ -25,21 +25,21 @@ scans of the same product and against public records. **Code sets the verdict; C
    .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
 
-2. **App:** open `SupPal.xcodeproj` and run. In the Simulator the default server (`http://127.0.0.1:8000`) works
+2. **App:** open `SuppBuddy.xcodeproj` and run. In the Simulator the default server (`http://127.0.0.1:8000`) works
    and a simulated tester replays the backend's simulator (genuine and cornstarch-cut vitamin C, alternating).
    On an iPhone, set your team under Signing & Capabilities, then in the app's Settings enter the laptop's
    address on the same Wi-Fi (`http://192.168.x.x:8000`) or an `ngrok http 8000` https address.
 
 3. **Tester:** flash `firmware/SupplementOpticalTester` (Arduino IDE or `arduino-cli`, board `esp32:esp32:esp32`).
    Plug it into the iPhone's USB-C port for power; the app finds it over Bluetooth. Without sensors wired,
-   flash `firmware-stub/suppal_stub` instead.
+   flash `firmware-stub/suppbuddy_stub` instead.
 
 After editing `project.yml`, regenerate with `xcodegen generate`.
 
 Checks (CI runs the same ones):
 
 ```bash
-swiftc SupPal/Analysis.swift SupPal/Server.swift SupPal/NIH.swift checks/main.swift -o /tmp/suppal-check && /tmp/suppal-check
+swiftc SuppBuddy/Analysis.swift SuppBuddy/Server.swift SuppBuddy/NIH.swift checks/main.swift -o /tmp/suppbuddy-check && /tmp/suppbuddy-check
 ```
 
 ```bash
@@ -48,7 +48,7 @@ cd backend/suppbuddy-backend && .venv/bin/python -m pytest -q
 
 ## Flow
 
-Blank (dark + clean water under each LED) → sample run (about a minute of dark + white/red/green/blue
+Blank (dark + clean water under each LED) → sample run (30 s of dark + white/red/green/blue
 readings while it dissolves, charted live) → product (label photo read by Claude on the server, barcode
 looked up in the NIH database, or typed; flavor too) → Analyze: the app posts `{label, readings, sample_prep}`
 to `POST /scans`, polls `GET /scans/{id}`, shows the measured verdict within seconds and Claude's explanation
@@ -72,10 +72,11 @@ Pins are defined in `firmware/SupplementOpticalTester/Config.h`; this table must
 | TCS34725 LED pin | GND | Keeps its white illumination LED off |
 | TSL2591 SDA / SCL | 16 / 17 | 90° to the beam (scattered light). I²C bus 1, because both sensors use address 0x29 |
 | Both sensors VIN / GND | 3V3 / GND | |
-| White LED | 33 | Each LED: GPIO → its own 330 Ω resistor → LED (long leg) → GND |
-| Red LED | 25 | |
-| Green LED | 26 | |
-| Blue LED | 27 | |
+| White LED | 27 | Each LED: GPIO → its own 330 Ω resistor → LED (long leg) → GND |
+| Red LED | 33 | |
+| Green LED | 25 | |
+| Blue LED | 26 | |
+| 16×2 I²C LCD SDA / SCL | 21 / 22 | Shares bus 0 with the TCS34725 (LCD at 0x27 or 0x3F). VCC to 5V, GND to GND |
 
 Use a WROOM-based ESP32 (GPIO 16/17 are taken by PSRAM on WROVER modules). Power comes from the iPhone's
 USB-C port. If the board stays dark on a USB-C to USB-C cable, use Apple's USB-C to USB adapter with a USB-A
@@ -84,14 +85,14 @@ to USB-C cable (some boards lack the resistors that tell a USB-C source to turn 
 ## BLE contract, protocol v3
 
 Data goes over Bluetooth LE, because iOS apps can't read an ESP32's USB serial without Apple's MFi program.
-Nordic UART Service `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`, advertised as `SupPal`. The app writes commands
+Nordic UART Service `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`, advertised as `SuppBuddy`. The app writes commands
 to RX (`6E400002-…`); the tester answers with `\n`-terminated lines on TX (`6E400003-…`), `\r\n` is fine.
 The same commands work typed into Arduino's Serial Monitor (115200 baud).
 
 | App writes | Tester answers |
 |---|---|
 | `b` | `I,…`, then `D,<values>` (all LEDs off), then `B,<led>,<values>` for each LED with clean water in the cuvette, then `E` |
-| `s` | `I,…`, then every ~1.4 s a cycle of `K,<t_ms>,<values>` (dark) and `S,<t_ms>,<led>,<values>` for each LED, for 60 s, then `E` |
+| `s` | `I,…`, then every ~1.4 s a cycle of `K,<t_ms>,<values>` (dark) and `S,<t_ms>,<led>,<values>` for each LED, for 30 s, then `E` |
 | `L\|line1\|line2` | nothing; show the two lines on the tester's screen |
 
 - `<values>` is `r,g,b,c,full,ir`: TCS34725 counts (averaged over 3 integrations, one decimal), then the

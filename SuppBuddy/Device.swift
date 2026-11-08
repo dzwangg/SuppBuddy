@@ -1,10 +1,10 @@
 import CoreBluetooth
 import Observation
 
-/// The SupPal tester over BLE, using the Nordic UART Service and protocol v3 (README, "BLE contract").
+/// The SuppBuddy tester over BLE, using the Nordic UART Service and protocol v3 (README, "BLE contract").
 /// The phone powers the tester over USB but talks to it over Bluetooth: iOS apps can't read its USB serial.
 /// "b" -> settings, dark and a water blank per LED, then "E"; "s" -> dark + white/red/green/blue
-/// readings every ~1.4 s for a minute, then "E"; "L|..|.." -> tester screen.
+/// readings every ~1.4 s for 30 s, then "E"; "L|..|.." -> tester screen.
 @MainActor @Observable
 final class Device: NSObject {
     var status = "Starting Bluetooth…"
@@ -75,7 +75,7 @@ final class Device: NSObject {
         return BlankSet(info: info, dark: dark, blanks: blanks)
     }
 
-    /// One sample run (about a minute on the tester). Calls onSample as each reading arrives,
+    /// One sample run (30 seconds on the tester). Calls onSample as each reading arrives,
     /// including the dark readings ("off") the tester takes every cycle.
     func runSample(onSample: (Sample) -> Void) async throws -> [Sample] {
         var samples: [Sample] = []
@@ -143,7 +143,7 @@ extension Device: @preconcurrency CBCentralManagerDelegate, @preconcurrency CBPe
         switch central.state {
         case .poweredOn: scan()
         case .poweredOff: status = "Turn Bluetooth on."
-        case .unauthorized: status = "Allow Bluetooth for SupPal in Settings."
+        case .unauthorized: status = "Allow Bluetooth for SuppBuddy in Settings."
         default: status = "Bluetooth unavailable."
         }
     }

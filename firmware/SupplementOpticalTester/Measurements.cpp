@@ -57,9 +57,12 @@ void Measurements::run(const Send& send, const KeepGoing& keepGoing) {
   info(send);
   const uint32_t start = millis();
   const uint32_t length = (uint32_t)Config::RUN_SECONDS * 1000;
-  while (millis() - start < length && keepGoing()) {
+  // Cycles run until one has started at or after RUN_SECONDS, so the readings span the whole run.
+  uint32_t cycleStart = 0;
+  while (cycleStart < length && keepGoing()) {
     // A dark reading every cycle lets the backend follow (and subtract) room light that drifts in.
-    uint32_t t = millis() - start;
+    cycleStart = millis() - start;
+    uint32_t t = cycleStart;
     send("K," + String(t) + "," + values(measure(LEDController::NONE)) + "\n");
     for (uint8_t i = 0; i < LEDController::COUNT; ++i) {
       t = millis() - start;

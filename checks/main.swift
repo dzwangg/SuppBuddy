@@ -1,5 +1,5 @@
 // Logic self-check, runs on the Mac without Xcode tests:
-//   swiftc SupPal/Analysis.swift SupPal/Server.swift SupPal/NIH.swift checks/main.swift -o /tmp/suppal-check && /tmp/suppal-check
+//   swiftc SuppBuddy/Analysis.swift SuppBuddy/Server.swift SuppBuddy/NIH.swift checks/main.swift -o /tmp/suppbuddy-check && /tmp/suppbuddy-check
 // Run from the repo root (it reads checks/fixtures/, which are real responses captured from the backend).
 import Foundation
 
@@ -44,7 +44,7 @@ precondition(livePoint(tenth, dark: dark, blank: dark) == nil) // dead LED: blan
 let info = DeviceInfo(version: "v3", tcsGain: 4, tcsIntegrationMs: 50, tslGain: 25, tslIntegrationMs: 100, leds: "WRGB")
 let set = BlankSet(info: info, dark: dark, blanks: ["white": blank, "r": blank, "g": blank, "b": blank])
 let cycleSamples = [Sample(t_ms: 0, r: 1, g: 2, b: 3, c: 4, scatter: 5, ir: 6, led: "off"), Sample(t_ms: 285, r: 1, g: 2, b: 3, c: 4, scatter: 5, ir: 6)]
-let readings = makeReadings(deviceID: "esp32-SupPal", blank: set, samples: cycleSamples)
+let readings = makeReadings(deviceID: "esp32-SuppBuddy", blank: set, samples: cycleSamples)
 let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(readings)) as! [String: Any]
 precondition(json["protocol"] as? String == "v3" && json["led_mode"] as? String == "cycle")
 precondition(json["tcs_integration_ms"] as? Double == 50 && json["tsl_gain"] as? Double == 25)
@@ -68,13 +68,16 @@ precondition(added.held == false && added.n == 6)
 // Real backend responses decode, and the progress feed reads them.
 let warning = try JSONDecoder().decode(Scan.self, from: fixture("scan_warning.json"))
 precondition(warning.report?.verdict == "WARNING" && warning.report?.accuracy.label == "inconsistent")
-precondition(warning.qc?.series?.absorbance.count == 60 && warning.lcd.code == "WARNING")
+precondition(warning.qc?.series?.absorbance?.count == 60 && warning.lcd.code == "WARNING")
 let feed = Server.steps(for: warning).map(\.text)
 precondition(feed.contains("Verdict WARNING, set by the measurements and records"), "\(feed)")
 precondition(feed.contains { $0.hasPrefix("Public records: FDA tainted list skipped") }, "\(feed)")
 precondition(feed.last == "Explanation skipped (no ANTHROPIC_API_KEY)", "\(feed)")
 let labelOnly = try JSONDecoder().decode(Scan.self, from: fixture("scan_label_only.json"))
 precondition(labelOnly.report?.verdict == "NO_REF" && labelOnly.qc == nil)
+// A scan that failed QC sends "series": {}; the app used to fail with "data is missing" on it.
+let badScan = try JSONDecoder().decode(Scan.self, from: fixture("scan_bad_scan.json"))
+precondition(badScan.report?.verdict == "BAD_SCAN" && badScan.qc?.series?.absorbance == nil && badScan.lcd.code == "BAD_SCAN")
 
 var partial = warning
 partial.status = "partial"
@@ -83,7 +86,7 @@ precondition(Server.steps(for: partial).last?.text == "Claude is writing the exp
 precondition(Server.errorText(Data(#"{"detail":"scan not found"}"#.utf8), status: 404) == "scan not found")
 
 // History survives a save/load round trip; an unreadable file is set aside, not overwritten.
-let dir = FileManager.default.temporaryDirectory.appending(path: "suppal-check-\(UUID())")
+let dir = FileManager.default.temporaryDirectory.appending(path: "suppbuddy-check-\(UUID())")
 try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
 let file = dir.appending(path: "history.json")
 let saved = TestRecord(date: Date(timeIntervalSince1970: 0), scan: warning, steps: [Step(icon: "sparkles", text: "hi")], thumbnail: nil)

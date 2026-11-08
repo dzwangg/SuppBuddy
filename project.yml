@@ -1,20 +1,20 @@
-name: SupPal
+name: SuppBuddy
 options:
-  bundleIdPrefix: com.suppal
+  bundleIdPrefix: com.suppbuddy
   deploymentTarget:
     iOS: "17.0"
 targets:
-  SupPal:
+  SuppBuddy:
     type: application
     platform: iOS
-    sources: [SupPal]
+    sources: [SuppBuddy]
     info:
-      path: SupPal/Info.plist
+      path: SuppBuddy/Info.plist
       properties:
-        NSBluetoothAlwaysUsageDescription: SupPal connects to your SupPal tester over Bluetooth.
-        NSCameraUsageDescription: SupPal photographs the supplement label and scans its barcode to identify the product.
-        NSPhotoLibraryAddUsageDescription: SupPal saves report cards you choose to save to your photo library.
-        NSLocalNetworkUsageDescription: SupPal sends test readings to the SupPal server running on your local network.
+        NSBluetoothAlwaysUsageDescription: SuppBuddy connects to your SuppBuddy tester over Bluetooth.
+        NSCameraUsageDescription: SuppBuddy photographs the supplement label and scans its barcode to identify the product.
+        NSPhotoLibraryAddUsageDescription: SuppBuddy saves report cards you choose to save to your photo library.
+        NSLocalNetworkUsageDescription: SuppBuddy sends test readings to the SuppBuddy server running on your local network.
         # Plain http only to local addresses (the laptop running the backend); everything else stays https.
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true

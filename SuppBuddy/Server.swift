@@ -1,6 +1,6 @@
 import Foundation
 
-// Wire models for the SupPal backend (backend/suppbuddy-backend/app/schemas.py).
+// Wire models for the SuppBuddy backend (backend/suppbuddy-backend/app/schemas.py).
 // Property names match the JSON keys exactly so no key-conversion strategy can mangle them.
 
 /// r,g,b,c: TCS34725 (transmitted light). scatter: TSL2591 full channel (light scattered at 90°). ir: its infrared channel.
@@ -92,14 +92,14 @@ struct Stage: Codable {
 }
 
 struct QC: Codable {
-    struct Series: Codable { var absorbance: [[Double]]; var scatter: [[Double]] } // [[seconds, value]]
+    struct Series: Codable { var absorbance: [[Double]]?; var scatter: [[Double]]? } // [[seconds, value]]; {} when QC failed
     var ok: Bool
     var flags: [String]
     var warnings: [String]
     var series: Series?
 }
 
-struct Lcd: Codable { var code: String; var line1: String; var line2: String }
+struct Lcd: Codable, Equatable { var code: String; var line1: String; var line2: String }
 
 struct Scan: Codable {
     var id: String
@@ -182,7 +182,7 @@ enum Server {
         do {
             (data, response) = try await URLSession.shared.data(for: req)
         } catch {
-            throw AppError("Can't reach the SupPal server at \(base). Is it running? (\(error.localizedDescription))")
+            throw AppError("Can't reach the SuppBuddy server at \(base). Is it running? (\(error.localizedDescription))")
         }
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
         guard (200..<300).contains(status) else { throw AppError(errorText(data, status: status)) }

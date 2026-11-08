@@ -28,12 +28,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: App logic self-check
         run: |
-          swiftc SupPal/Analysis.swift SupPal/Server.swift SupPal/NIH.swift checks/main.swift -o "$RUNNER_TEMP/suppal-check"
-          "$RUNNER_TEMP/suppal-check"
+          swiftc SuppBuddy/Analysis.swift SuppBuddy/Server.swift SuppBuddy/NIH.swift checks/main.swift -o "$RUNNER_TEMP/suppbuddy-check"
+          "$RUNNER_TEMP/suppbuddy-check"
       - name: Type-check the whole app (iPhone and Simulator)
         run: |
-          xcrun --sdk iphoneos swiftc -typecheck -target arm64-apple-ios17.0 -swift-version 5 SupPal/*.swift
-          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator -swift-version 5 SupPal/*.swift
+          xcrun --sdk iphoneos swiftc -typecheck -target arm64-apple-ios17.0 -swift-version 5 SuppBuddy/*.swift
+          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator -swift-version 5 SuppBuddy/*.swift
 
   firmware:
     runs-on: ubuntu-latest
@@ -45,8 +45,8 @@ jobs:
           URL=https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core update-index --additional-urls "$URL"
           arduino-cli core install esp32:esp32 --additional-urls "$URL"
-          arduino-cli lib install "Adafruit TCS34725" "Adafruit TSL2591 Library" "Adafruit Unified Sensor" "Adafruit BusIO"
+          arduino-cli lib install "Adafruit TCS34725" "Adafruit TSL2591 Library" "Adafruit Unified Sensor" "Adafruit BusIO" "LiquidCrystal I2C"
       - name: Build the tester firmware
         run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware/SupplementOpticalTester
       - name: Build the fake-data stub
-        run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware-stub/suppal_stub
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware-stub/suppbuddy_stub

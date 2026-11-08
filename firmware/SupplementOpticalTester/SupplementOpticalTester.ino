@@ -1,7 +1,8 @@
-// SupPal optical tester firmware, protocol v3 (repo README, "BLE contract").
+// SuppBuddy optical tester firmware, protocol v3 (repo README, "BLE contract").
 // The iPhone powers the tester over USB and controls it over Bluetooth. The same commands work
 // from Arduino's Serial Monitor (115200 baud, "Newline"), so the rig can be tested on a laptop.
 #include <Wire.h>
+#include <LiquidCrystal_I2C.h>
 #include "Config.h"
 #include "LEDController.h"
 #include "RGBSensor.h"
@@ -16,12 +17,13 @@ RGBSensor rgb;
 LuxSensor lux;
 Measurements measurements(leds, rgb, lux);
 BleLink ble;
+LiquidCrystal_I2C* lcd = nullptr;  // 16x2 on Wire (GPIO 21/22) next to the TCS34725; stays null if none answers
 
 void help() {
-  Serial.println("\n=== SupPal optical tester (protocol v3) ===");
+  Serial.println("\n=== SuppBuddy optical tester (protocol v3) ===");
   Serial.println("Type a command and press Enter (115200 baud, Newline):");
   Serial.println("  b       - dark + water-blank readings for each LED");
-  Serial.println("  s       - sample run: a dark + W/R/G/B reading cycle for 60 s");
+  Serial.println("  s       - sample run: a dark + W/R/G/B reading cycle for " + String(Config::RUN_SECONDS) + " s");
   Serial.println("  i       - sensor settings line");
   Serial.println("  status  - which sensors were detected");
   Serial.println("  led     - light each LED for half a second (wiring check)");
@@ -35,8 +37,10 @@ void status() {
   Serial.println(rgb.available() ? "DETECTED" : "NOT DETECTED");
   Serial.print("TSL2591 on GPIO 16/17: ");
   Serial.println(lux.available() ? "DETECTED" : "NOT DETECTED");
+  Serial.print("LCD on GPIO 21/22: ");
+  Serial.println(lcd ? "DETECTED" : "NOT DETECTED");
   Serial.print("Bluetooth: ");
-  Serial.println(ble.connected() ? "phone connected" : "advertising as SupPal");
+  Serial.println(ble.connected() ? "phone connected" : "advertising as SuppBuddy");
 }
 
 void ledCheck() {
@@ -49,13 +53,29 @@ void ledCheck() {
   leds.allOff();
 }
 
-// TODO(lcd): draw on the tester's display once it's wired (16x2 assumed by the backend).
+// One 16-character LCD line: printable ASCII only, padded so old text is overwritten without clear().
+String fit(const String& s) {
+  String out;
+  for (unsigned i = 0; i < s.length() && out.length() < 16; i++) out += (s[i] >= 32 && s[i] <= 126) ? s[i] : ' ';
+  while (out.length() < 16) out += ' ';
+  return out;
+}
+
+void lcdShow(const String& line1, const String& line2) {
+  if (!lcd) return;
+  lcd->setCursor(0, 0);
+  lcd->print(fit(line1));
+  lcd->setCursor(0, 1);
+  lcd->print(fit(line2));
+}
+
 void showOnScreen(const String& text) {
   // text is "L|line1|line2"
   int bar = text.indexOf('|', 2);
   String line1 = bar > 0 ? text.substring(2, bar) : text.substring(2);
   String line2 = bar > 0 ? text.substring(bar + 1) : "";
   Serial.println("SCREEN: " + line1 + " / " + line2);
+  lcdShow(line1, line2);
 }
 
 // Runs one protocol command. Output always goes to Serial; it also goes to the phone when the phone
@@ -66,8 +86,22 @@ void handle(char command, const String& text, bool fromPhone) {
     if (fromPhone) ble.send(line);
   };
   switch (command) {
-    case 'b': measurements.blank(send); break;
-    case 's': measurements.run(send, [fromPhone] { return !fromPhone || ble.connected(); }); break;
+    case 'b':
+      lcdShow("SuppBuddy", "Reading water...");
+      measurements.blank(send);
+      lcdShow("Blank done", "Add the sample");
+      break;
+    case 's': {
+      const uint32_t start = millis();
+      const uint32_t length = (uint32_t)Config::RUN_SECONDS * 1000;
+      measurements.run(send, [fromPhone, start, length] {  // called once per ~1.4 s cycle
+        uint32_t elapsed = millis() - start;
+        lcdShow("Testing sample", "Keep still " + String(elapsed < length ? (length - elapsed + 999) / 1000 : 0) + "s");
+        return !fromPhone || ble.connected();
+      });
+      lcdShow("Run done", "Tap Analyze");
+      break;
+    }
     case 'i': measurements.info(send); break;
     case 'L': showOnScreen(text); break;
     default: break;
@@ -101,6 +135,16 @@ void setup() {
   LuxWire.setClock(100000);
   rgb.begin(Wire);  // a missing sensor is reported to the app as an X line, not a crash
   lux.begin(LuxWire);
+  for (uint8_t addr : {0x27, 0x3F}) {  // PCF8574T backpacks answer at 0x27, PCF8574AT at 0x3F
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+      lcd = new LiquidCrystal_I2C(addr, 16, 2);
+      lcd->init();
+      lcd->backlight();
+      break;
+    }
+  }
+  lcdShow("SuppBuddy", "Ready");
 
   ble.begin(Config::BLE_NAME);
   status();

@@ -13,10 +13,11 @@ namespace Config {
   constexpr uint8_t LUX_SCL = 17;
 
   // Each LED: GPIO -> its own 330 ohm resistor -> LED anode; cathode -> GND.
-  constexpr uint8_t LED_WHITE = 33;
-  constexpr uint8_t LED_RED = 25;
-  constexpr uint8_t LED_GREEN = 26;
-  constexpr uint8_t LED_BLUE = 27;
+  // As wired on the main board.
+  constexpr uint8_t LED_WHITE = 27;
+  constexpr uint8_t LED_RED = 33;
+  constexpr uint8_t LED_GREEN = 25;
+  constexpr uint8_t LED_BLUE = 26;
 
   // Sensor settings. The firmware reports them in the "I" line; the backend derives saturation
   // limits from them and warns when a scan used different settings than the reference data.
@@ -31,7 +32,7 @@ namespace Config {
 
   constexpr uint8_t TCS_AVERAGE = 3;     // TCS34725 integrations averaged per reading
   constexpr uint16_t LED_SETTLE_MS = 5;  // LED output is stable within microseconds; this is margin
-  constexpr uint16_t RUN_SECONDS = 60;   // length of a sample run
+  constexpr uint16_t RUN_SECONDS = 30;   // length of a sample run
   constexpr uint32_t SERIAL_BAUD = 115200;
-  constexpr const char* BLE_NAME = "SupPal";
+  constexpr const char* BLE_NAME = "SuppBuddy";
 }

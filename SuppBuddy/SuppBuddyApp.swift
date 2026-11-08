@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct SupPalApp: App {
+struct SuppBuddyApp: App {
     var body: some Scene {
         WindowGroup { ContentView() }
     }

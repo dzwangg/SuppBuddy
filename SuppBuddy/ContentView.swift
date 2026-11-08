@@ -47,7 +47,7 @@ struct ContentView: View {
                         }
 
                         StepCard(number: 2, title: "Sample",
-                                 detail: "Stir \(Int(sampleMassMg)) mg of the supplement into \(Int(sampleVolumeMl)) mL of water, fill the cuvette, insert it, then start. Keep it still for the whole run (about a minute).",
+                                 detail: "Stir \(Int(sampleMassMg)) mg of the supplement into \(Int(sampleVolumeMl)) mL of water, fill the cuvette, insert it, then start. Keep it still for the whole run (30 seconds).",
                                  done: whiteSamples.count >= 10 && busy == nil) {
                             Button(samples.isEmpty ? "Start run" : "Run again") {
                                 samples = []
@@ -93,7 +93,7 @@ struct ContentView: View {
 
                         analyzeSection
 
-                        Text("SupPal is a screening tool, not a certified lab test or medical advice.")
+                        Text("SuppBuddy is a screening tool, not a certified lab test or medical advice.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -106,7 +106,7 @@ struct ContentView: View {
                 .onChange(of: steps.count) { withAnimation { proxy.scrollTo("bottom", anchor: .bottom) } }
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("SupPal")
+            .navigationTitle("SuppBuddy")
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     NavigationLink { HistoryView(records: $history, confirm: confirm) } label: {
@@ -193,8 +193,13 @@ struct ContentView: View {
             var scan = try await Server.createScan(label: sent, readings: readings, prep: prep)
             var record: TestRecord?
             let started = Date.now
+            var onScreen: Lcd?
             while true {
                 withAnimation { steps = Server.steps(for: scan) }
+                if scan.lcd != onScreen { // tester screen: "Analyzing..." now, the verdict as soon as it's set
+                    device.show(scan.lcd)
+                    onScreen = scan.lcd
+                }
                 if scan.report != nil { // the measured verdict arrives in seconds; Claude's explanation follows
                     record = TestRecord(id: record?.id ?? UUID(), date: record?.date ?? .now, scan: scan, steps: steps, thumbnail: thumbnail)
                     if current?.id != record?.id { showReport = true }
@@ -208,7 +213,6 @@ struct ContentView: View {
             guard let record else { throw AppError("The server couldn't finish this scan. Try again.") }
             history.insert(record, at: 0)
             History.save(history)
-            device.show(scan.lcd)
         }
     }
 
@@ -437,8 +441,8 @@ struct ReportView: View {
                     check("Public records", report.reputability.label == "unknown" ? "Not checked" : report.reputability.label.capitalized
                           + (report.reputability.score.map { " (\($0)/100)" } ?? ""), "")
                 }
-                if let series = record.scan.qc?.series {
-                    Section("Sample") { DissolutionChart(absorbance: series.absorbance, cloudiness: series.scatter).padding(.vertical, 4) }
+                if let absorbance = record.scan.qc?.series?.absorbance, let scatter = record.scan.qc?.series?.scatter {
+                    Section("Sample") { DissolutionChart(absorbance: absorbance, cloudiness: scatter).padding(.vertical, 4) }
                 }
                 if !report.key_findings.isEmpty {
                     Section("Findings") { ForEach(report.key_findings, id: \.self) { Label($0, systemImage: "exclamationmark.circle") } }
@@ -495,7 +499,7 @@ struct ReportView: View {
                     }
                 }
                 Section {
-                    Text("SupPal is a screening tool, not a certified lab test or medical advice.").font(.footnote).foregroundStyle(.secondary)
+                    Text("SuppBuddy is a screening tool, not a certified lab test or medical advice.").font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Report")
@@ -503,7 +507,7 @@ struct ReportView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     if let shareImage {
-                        ShareLink(item: shareImage, preview: SharePreview("SupPal report: \(record.name)", image: shareImage))
+                        ShareLink(item: shareImage, preview: SharePreview("SuppBuddy report: \(record.name)", image: shareImage))
                     }
                 }
             }
@@ -546,13 +550,13 @@ struct ShareCard: View {
                     Text(record.date, format: .dateTime.month().day().year()).font(.caption).foregroundStyle(.secondary)
                 }
                 Text(record.name).font(.headline)
-                if let series = record.scan.qc?.series {
-                    DissolutionChart(absorbance: series.absorbance, cloudiness: series.scatter)
+                if let absorbance = record.scan.qc?.series?.absorbance, let scatter = record.scan.qc?.series?.scatter {
+                    DissolutionChart(absorbance: absorbance, cloudiness: scatter)
                 }
                 Text(report.summary).font(.subheadline)
             }
             Divider()
-            Text("Tested with SupPal · a screening tool, not a lab test or medical advice")
+            Text("Tested with SuppBuddy · a screening tool, not a lab test or medical advice")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
