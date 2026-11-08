@@ -86,7 +86,9 @@ void showOnScreen(const String& text) {
 // Runs one protocol command. Output always goes to Serial; it also goes to the phone when the phone
 // asked. A run started from the phone stops early if the phone disconnects.
 void handle(char command, const String& text, bool fromPhone) {
-  Measurements::Send send = [fromPhone](const String& line) {
+  String failed;  // sensor named in an X line, so the LCD says what went wrong instead of "done"
+  Measurements::Send send = [fromPhone, &failed](const String& line) {
+    if (line.startsWith("X,")) failed = line.substring(2, line.indexOf(' '));
     Serial.print(line);
     if (fromPhone) ble.send(line);
   };
@@ -94,7 +96,8 @@ void handle(char command, const String& text, bool fromPhone) {
     case 'b':
       lcdShow("SuppBuddy", "Reading water...");
       measurements.blank(send);
-      lcdShow("Blank done", "Add the sample");
+      if (failed.length()) lcdShow("Sensor error", failed + " wiring");
+      else lcdShow("Blank done", "Add the sample");
       screenSince = millis();
       break;
     case 's': {
@@ -105,7 +108,8 @@ void handle(char command, const String& text, bool fromPhone) {
         lcdShow("Testing sample", "Keep still " + String(elapsed < length ? (length - elapsed + 999) / 1000 : 0) + "s");
         return !fromPhone || ble.connected();
       });
-      lcdShow("Run done", "Tap Analyze");
+      if (failed.length()) lcdShow("Sensor error", failed + " wiring");
+      else lcdShow("Run done", "Tap Analyze");
       screenSince = millis();
       break;
     }
