@@ -34,8 +34,12 @@ the TSL2591 at 100 ms), and `ir` should stay close to the dark value.
 ## Wiring
 
 The pin table is in the repo root README (one table for everyone); `Config.h` must match it. Each LED:
-GPIO → its own 330 Ω resistor → LED long leg; short leg → GND. Tie the TCS34725's `LED` pin to GND so its
-white LED stays off (the firmware also turns it off on boards where it's wired to `INT`).
+GPIO → its own 330 Ω resistor → LED long leg; short leg → GND.
+
+**TCS34725 white LED:** wire the breakout's `LED` pin to **GPIO 4**. The firmware drives it LOW at power-up
+(`RGBSensor::ledOff()`), so the LED stays off for every reading; it sits millimeters from the sensor and its
+glare would bounce back into it. Tying `LED` to GND instead also works, and boards with `LED` wired to `INT`
+are covered too. `status` in Serial Monitor reminds you which pin it uses.
 
 ## How a reading works
 
