@@ -112,7 +112,8 @@ V3 has three printed parts:
   the base and blocks out light. Lift the sleeve to pull the vial out.
 
 The V3 model is a normal, fully dimensioned Onshape feature tree with variables for the fits and for the
-sizes worth measuring before printing. Every dimension, iteration and part is documented in
+sizes worth measuring before printing. **[Open the V3 CAD in Onshape](https://cad.onshape.com/documents/ada0757f8a367ed8c935f14f/w/389f688fe28c85a3add01f94/e/45284f49e09add42eb3ea0fc)**.
+The same document also has the V1 and V2 Part Studios. Every dimension, iteration and part is documented in
 [hardware/details.md](hardware/details.md), and the CAD scripts are in [hardware/cad/](hardware/cad/).
 
 <p align="center">
