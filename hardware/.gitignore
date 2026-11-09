@@ -1,0 +1,21 @@
+# hardware/ is mostly local tooling (the Onshape MCP server and its venv, smoke-test scripts,
+# CLAUDE.md, API keys). Only the CAD sources and the hardware docs are committed.
+/*
+!/.gitignore
+!/cad/
+!/details.md
+!/ideas.md
+
+# Never commit secrets (hardware/.env and onshape-mcp/.env hold API keys)
+.env
+.env.*
+**/.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Local Onshape MCP server (its own git repo, venv and API keys): never commit
+/onshape-mcp/

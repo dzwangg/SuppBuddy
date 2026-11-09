@@ -1,112 +1,54 @@
-# SupPal
+<p align="center">
+  <img src="assets/logo.png" alt="SuppBuddy logo" width="140"/>
+</p>
 
-A pocket supplement tester: an ESP32 cuvette rig measures how a dissolved sample absorbs and scatters
-light, the iPhone app collects the readings and the label, and the backend scores them against other
-scans of the same product and against public records. **Code sets the verdict; Claude only explains it.**
+<h1 align="center">SuppBuddy</h1>
 
-| Folder | What |
-|---|---|
-| `SupPal/` | SwiftUI iPhone app (iOS 17+) |
-| `backend/suppbuddy-backend/` | FastAPI server: sensor features, crowd fingerprints, FDA/NIH lookups, verdict, Claude explanation ([README](backend/suppbuddy-backend/README.md)) |
-| `firmware/SupplementOpticalTester/` | Tester firmware: real sensors, Bluetooth protocol v3 ([README](firmware/SupplementOpticalTester/README.md)) |
-| `firmware-stub/` | Same protocol with fake readings, for testing the app on a bare ESP32 |
-| `checks/` | App logic self-check, with real backend responses as fixtures |
-| `.github/workflows/ci.yml` | Runs the backend tests, the app self-check and both firmware builds on every push and PR |
+<p align="center"><b>The pocket lab for your supplements.</b></p>
 
-## Run it
+<p align="center"><i>Built at the Cube Buildathon, November 2026</i></p>
 
-1. **Backend** (holds the Claude API key; the app has no secrets):
+<p align="center">
+  <img src="assets/demo.png" alt="The SuppBuddy tester next to the SuppBuddy iPhone app" width="700"/>
+</p>
 
-   ```bash
-   cd backend/suppbuddy-backend
-   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-   cp .env.example .env              # put ANTHROPIC_API_KEY in .env
-   .venv/bin/python -m scripts.seed_demo
-   .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
-   ```
+## The problem
 
-2. **App:** open `SupPal.xcodeproj` and run. In the Simulator the default server (`http://127.0.0.1:8000`) works
-   and a simulated tester replays the backend's simulator (genuine and cornstarch-cut vitamin C, alternating).
-   On an iPhone, set your team under Signing & Capabilities, then in the app's Settings enter the laptop's
-   address on the same Wi-Fi (`http://192.168.x.x:8000`) or an `ngrok http 8000` https address.
+Supplements don't need FDA approval before they're sold. Between 2007 and 2016 the FDA found
+**776 supplements with hidden drugs** in them (JAMA Network Open, 2018), and those are only the ones it
+caught. Fillers and contamination are invisible to the eye, and a lab test costs far more than the bottle.
 
-3. **Tester:** flash `firmware/SupplementOpticalTester` (Arduino IDE or `arduino-cli`, board `esp32:esp32:esp32`).
-   Plug it into the iPhone's USB-C port for power; the app finds it over Bluetooth. Without sensors wired,
-   flash `firmware-stub/suppal_stub` instead.
+## What SuppBuddy does
 
-After editing `project.yml`, regenerate with `xcodegen generate`.
+Mix a scoop of your supplement into water, drop the vial into SuppBuddy, and tap **Start** on your phone.
 
-Checks (CI runs the same ones):
+1. **Measure:** the tester shines four colors of light through the sample and watches what passes through
+   and what scatters.
+2. **Compare:** the readings are checked against other people's scans of the same product, and the brand
+   is checked against FDA and NIH records.
+3. **Report:** you get a plain-language verdict on whether your powder looks like the real thing, written
+   with Claude.
 
-```bash
-swiftc SupPal/Analysis.swift SupPal/Server.swift SupPal/NIH.swift checks/main.swift -o /tmp/suppal-check && /tmp/suppal-check
-```
+The tester plugs into the iPhone for power and talks to it over Bluetooth, so there's nothing else to carry.
 
-```bash
-cd backend/suppbuddy-backend && .venv/bin/python -m pytest -q
-```
+<p align="center">
+  <img src="hardware/cad/render/out/hero.png" alt="Render of the SuppBuddy tester" width="600"/>
+</p>
 
-## Flow
+## Team
 
-Blank (dark + clean water under each LED) → sample run (about a minute of dark + white/red/green/blue
-readings while it dissolves, charted live) → product (label photo read by Claude on the server, barcode
-looked up in the NIH database, or typed; flavor too) → Analyze: the app posts `{label, readings, sample_prep}`
-to `POST /scans`, polls `GET /scans/{id}`, shows the measured verdict within seconds and Claude's explanation
-when it lands, then sends the result to the tester's screen. "Yes, this is …" calls `POST /scans/{id}/confirm`,
-which adds the scan to that product's crowd reference, or holds it for review when it doesn't match an
-established reference.
+- **[Akshay Karthik](https://www.linkedin.com/in/akshay-karthik-a219a7311/)**: iterated on the ESP32 firmware with Kevin to drive the LEDs and read the light sensors.
+- **[William Chen](https://www.linkedin.com/in/chenwilliam2026/)**: developed the entire backend system.
+- **[Kevin Yuan](https://www.linkedin.com/in/kevinyuan92620/)**: iterated on the ESP32 firmware with Akshay to drive the LEDs and read the light sensors.
+- **[David Wang](https://www.linkedin.com/in/davidwang-/)**: built the whole iPhone app, connected it to the tester, and drove the tester's LCD.
+- **[Trevor Bedson](https://bedson.tech)**: designed the CAD with James and manufactured the enclosure.
+- **[James Nguyen](https://www.linkedin.com/in/jamesnguyen008/)**: designed the CAD with Trevor and manufactured the enclosure.
 
-## Sample prep (protocol v3)
+Inspired by Peel, the HackMIT-winning at-home medical testing device.
 
-**500 mg of powder in 50 mL of water (10 g/L), stirred, poured into the cuvette.** Creatine only dissolves up
-to about 17 g/L at 20 °C, so a stronger mix would leave genuine creatine cloudy. The app sends the amounts
-(Settings → Sample prep); the server rescales color and cloudiness when a scan used a different amount.
+## Learn more
 
-## Hardware
+- **[Technical documentation](documentation.md):** how it works, the hardware, the science and how to run it.
+- **Pitch deck:** [PDF](assets/SuppBuddy.pdf) · [PowerPoint](assets/SuppBuddy.pptx)
 
-Pins are defined in `firmware/SupplementOpticalTester/Config.h`; this table must match it.
-
-| Part | ESP32 pin | Notes |
-|---|---|---|
-| TCS34725 SDA / SCL | 21 / 22 | In line behind the cuvette (transmitted light). I²C bus 0 |
-| TCS34725 LED pin | 4 | The firmware holds it LOW so the board's white illumination LED stays off (tying it to GND also works) |
-| TSL2591 SDA / SCL | 16 / 17 | 90° to the beam (scattered light). I²C bus 1, because both sensors use address 0x29 |
-| Both sensors VIN / GND | 3V3 / GND | |
-| White LED | 33 | Each LED: GPIO → its own 330 Ω resistor → LED (long leg) → GND |
-| Red LED | 25 | |
-| Green LED | 26 | |
-| Blue LED | 27 | |
-
-Use a WROOM-based ESP32 (GPIO 16/17 are taken by PSRAM on WROVER modules). Power comes from the iPhone's
-USB-C port. If the board stays dark on a USB-C to USB-C cable, use Apple's USB-C to USB adapter with a USB-A
-to USB-C cable (some boards lack the resistors that tell a USB-C source to turn power on).
-
-## BLE contract, protocol v3
-
-Data goes over Bluetooth LE, because iOS apps can't read an ESP32's USB serial without Apple's MFi program.
-Nordic UART Service `6E400001-B5A3-F393-E0A9-E50E24DCCA9E`, advertised as `SupPal`. The app writes commands
-to RX (`6E400002-…`); the tester answers with `\n`-terminated lines on TX (`6E400003-…`), `\r\n` is fine.
-The same commands work typed into Arduino's Serial Monitor (115200 baud).
-
-| App writes | Tester answers |
-|---|---|
-| `b` | `I,…`, then `D,<values>` (all LEDs off), then `B,<led>,<values>` for each LED with clean water in the cuvette, then `E` |
-| `s` | `I,…`, then every ~1.4 s a cycle of `K,<t_ms>,<values>` (dark) and `S,<t_ms>,<led>,<values>` for each LED, for 60 s, then `E` |
-| `L\|line1\|line2` | nothing; show the two lines on the tester's screen |
-
-- `<values>` is `r,g,b,c,full,ir`: TCS34725 counts (averaged over 3 integrations, one decimal), then the
-  TSL2591's full-spectrum and infrared counts.
-- `<led>` is `W`, `R`, `G` or `B`, in that order.
-- `I,v3,<tcs gain>,<tcs ms>,<tsl gain>,<tsl ms>,WRGB` reports the sensor settings. The backend derives
-  saturation limits from them and warns when they differ from the reference settings.
-- `X,<message>` then `E`: the tester can't measure (a sensor isn't detected); the app shows the message.
-- The app gives up after 5 s without a line. Each line fits one notification (MTU 185; lines are under 70 bytes).
-- The app still reads protocol v2 lines (white light only) from older stubs.
-
-## Known shortcuts
-
-- The crowd reference starts from simulated seed scans (`scripts/seed_demo.py`, marked synthetic). Replace
-  them with about 5 real confirmed scans per demo product before judging.
-- `backend/suppbuddy-backend/data/tainted_supplements.csv` ships empty; import FDA's list
-  (`python -m scripts.import_tainted`) before the demo, or the tainted check is skipped.
-- Scoring thresholds and record weights are first guesses; `grep -rn "TODO(" backend` lists them.
+> SuppBuddy is a screening tool, not a certified lab test or medical advice.

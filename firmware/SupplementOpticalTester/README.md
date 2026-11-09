@@ -1,4 +1,4 @@
-# SupPal optical tester firmware
+# SuppBuddy optical tester firmware
 
 Firmware for the cuvette rig: four LEDs (white, red, green, blue), a **TCS34725** color sensor in line behind
 the cuvette (transmitted light) and a **TSL2591** light sensor at 90° (scattered light). It speaks **Bluetooth

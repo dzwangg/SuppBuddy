@@ -37,5 +37,5 @@ namespace Config {
   constexpr uint16_t LED_SETTLE_MS = 5;  // LED output is stable within microseconds; this is margin
   constexpr uint16_t RUN_SECONDS = 60;   // length of a sample run
   constexpr uint32_t SERIAL_BAUD = 115200;
-  constexpr const char* BLE_NAME = "SupPal";
+  constexpr const char* BLE_NAME = "SuppBuddy";
 }

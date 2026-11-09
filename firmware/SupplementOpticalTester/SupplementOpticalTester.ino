@@ -1,4 +1,4 @@
-// SupPal optical tester firmware, protocol v3 (repo README, "BLE contract").
+// SuppBuddy optical tester firmware, protocol v3 (repo README, "BLE contract").
 // The iPhone powers the tester over USB and controls it over Bluetooth. The same commands work
 // from Arduino's Serial Monitor (115200 baud, "Newline"), so the rig can be tested on a laptop.
 #include <Wire.h>
@@ -18,7 +18,7 @@ Measurements measurements(leds, rgb, lux);
 BleLink ble;
 
 void help() {
-  Serial.println("\n=== SupPal optical tester (protocol v3) ===");
+  Serial.println("\n=== SuppBuddy optical tester (protocol v3) ===");
   Serial.println("Type a command and press Enter (115200 baud, Newline):");
   Serial.println("  b       - dark + water-blank readings for each LED");
   Serial.println("  s       - sample run: a dark + W/R/G/B reading cycle for 60 s");
@@ -39,7 +39,7 @@ void status() {
   Serial.print("TSL2591 on GPIO 16/17: ");
   Serial.println(lux.available() ? "DETECTED" : "NOT DETECTED");
   Serial.print("Bluetooth: ");
-  Serial.println(ble.connected() ? "phone connected" : "advertising as SupPal");
+  Serial.println(ble.connected() ? "phone connected" : "advertising as SuppBuddy");
 }
 
 void ledCheck() {

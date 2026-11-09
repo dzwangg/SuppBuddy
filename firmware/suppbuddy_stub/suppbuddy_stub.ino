@@ -1,4 +1,4 @@
-// SupPal BLE test stub for a bare ESP32: no sensors needed. Sends fake readings in protocol v3 so the
+// SuppBuddy BLE test stub for a bare ESP32: no sensors needed. Sends fake readings in protocol v3 so the
 // iPhone app and backend can be tested before the optics are wired. The real firmware lives in
 // firmware/SupplementOpticalTester and speaks exactly the same protocol (repo README, "BLE contract").
 //
@@ -84,7 +84,7 @@ class ServerCallbacks : public BLEServerCallbacks {
 
 void setup() {
   Serial.begin(115200);
-  BLEDevice::init("SupPal");
+  BLEDevice::init("SuppBuddy");
   BLEDevice::setMTU(185);  // each line must fit in one notification
   BLEServer *server = BLEDevice::createServer();
   server->setCallbacks(new ServerCallbacks());
@@ -96,7 +96,7 @@ void setup() {
   BLEDevice::getAdvertising()->addServiceUUID(SERVICE_UUID);
   BLEDevice::getAdvertising()->setScanResponse(true);
   BLEDevice::startAdvertising();
-  Serial.println("SupPal stub (protocol v3) advertising");
+  Serial.println("SuppBuddy stub (protocol v3) advertising");
 }
 
 void loop() {

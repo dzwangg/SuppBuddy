@@ -93,7 +93,7 @@ struct ContentView: View {
 
                         analyzeSection
 
-                        Text("SupPal is a screening tool, not a certified lab test or medical advice.")
+                        Text("SuppBuddy is a screening tool, not a certified lab test or medical advice.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
@@ -106,7 +106,7 @@ struct ContentView: View {
                 .onChange(of: steps.count) { withAnimation { proxy.scrollTo("bottom", anchor: .bottom) } }
             }
             .background(Color(.systemGroupedBackground))
-            .navigationTitle("SupPal")
+            .navigationTitle("SuppBuddy")
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     NavigationLink { HistoryView(records: $history, confirm: confirm) } label: {
@@ -495,7 +495,7 @@ struct ReportView: View {
                     }
                 }
                 Section {
-                    Text("SupPal is a screening tool, not a certified lab test or medical advice.").font(.footnote).foregroundStyle(.secondary)
+                    Text("SuppBuddy is a screening tool, not a certified lab test or medical advice.").font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Report")
@@ -503,7 +503,7 @@ struct ReportView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     if let shareImage {
-                        ShareLink(item: shareImage, preview: SharePreview("SupPal report: \(record.name)", image: shareImage))
+                        ShareLink(item: shareImage, preview: SharePreview("SuppBuddy report: \(record.name)", image: shareImage))
                     }
                 }
             }
@@ -552,7 +552,7 @@ struct ShareCard: View {
                 Text(report.summary).font(.subheadline)
             }
             Divider()
-            Text("Tested with SupPal · a screening tool, not a lab test or medical advice")
+            Text("Tested with SuppBuddy · a screening tool, not a lab test or medical advice")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

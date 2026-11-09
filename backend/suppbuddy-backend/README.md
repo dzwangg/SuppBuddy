@@ -89,7 +89,7 @@ there is one, otherwise brand + name + **flavor**.
 {
   "label":   { "brand": "...", "product_name": "...", "flavor": "...", "upc": "...", "ingredients": [{"name": "...", "amount": 100, "unit": "mg"}], "lot": "..." },
   "readings": {
-    "device_id": "esp32-SupPal",
+    "device_id": "esp32-SuppBuddy",
     "protocol": "v3",
     "led_mode": "cycle",
     "tcs_gain": 4, "tcs_integration_ms": 50, "tsl_gain": 25, "tsl_integration_ms": 100,
