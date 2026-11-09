@@ -5,6 +5,7 @@
 !/cad/
 !/details.md
 !/ideas.md
+!/stl/
 
 # Never commit secrets (hardware/.env and onshape-mcp/.env hold API keys)
 .env

@@ -116,6 +116,23 @@ sizes worth measuring before printing. **[Open the V3 CAD in Onshape](https://ca
 The same document also has the V1 and V2 Part Studios. Every dimension, iteration and part is documented in
 [hardware/details.md](hardware/details.md), and the CAD scripts are in [hardware/cad/](hardware/cad/).
 
+### Print It Yourself
+
+Download the V3 STL files (millimetres, exported from Onshape):
+
+| Part | File |
+|---|---|
+| All three parts | [suppbuddy-v3-stl.zip](hardware/stl/suppbuddy-v3-stl.zip) |
+| Base | [suppbuddy-v3-base.stl](hardware/stl/suppbuddy-v3-base.stl) |
+| Lid | [suppbuddy-v3-lid.stl](hardware/stl/suppbuddy-v3-lid.stl) |
+| Vial cap sleeve | [suppbuddy-v3-sleeve.stl](hardware/stl/suppbuddy-v3-sleeve.stl) |
+
+- Use **black or dark filament** so room light can't leak in. No supports are needed.
+- Print the base floor-down, and the lid and sleeve upside down.
+- Print the sleeve first and check its press fit on your vial's cap before printing the rest.
+- The parts fit an SKS 20 mL PET vial (⌀27.4 mm body). For a different vial, change the fit variables in the
+  Onshape model and re-export.
+
 <p align="center">
   <img src="assets/build-inside.jpg" alt="The printed enclosure with the electronics inside" width="420"/>
   <img src="assets/device.jpg" alt="The finished tester" width="300"/>
@@ -254,7 +271,7 @@ The app writes commands to RX (`6E400002-…`), and the tester answers with `\n`
 | `backend/suppbuddy-backend/` | FastAPI server: features, scoring, crowd fingerprints, FDA/NIH lookups, Claude agent ([README](backend/suppbuddy-backend/README.md)) |
 | `firmware/SupplementOpticalTester/` | Tester firmware ([README](firmware/SupplementOpticalTester/README.md)) |
 | `firmware/suppbuddy_stub/` | Same protocol with fake readings, for testing the app on a bare ESP32 |
-| `hardware/` | Enclosure CAD scripts, renders and the full hardware log ([details.md](hardware/details.md)) |
+| `hardware/` | Enclosure CAD scripts, printable STLs (`hardware/stl/`), renders and the full hardware log ([details.md](hardware/details.md)) |
 | `checks/` | App logic self-check, with real backend responses as fixtures |
 | `assets/` | Wiring diagram, pitch deck (PPTX and PDF), and the photos used in these docs |
 
