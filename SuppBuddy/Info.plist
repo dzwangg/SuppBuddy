@@ -24,13 +24,13 @@
 		<true/>
 	</dict>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>SupPal connects to your SupPal tester over Bluetooth.</string>
+	<string>SuppBuddy connects to your SuppBuddy tester over Bluetooth.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>SupPal photographs the supplement label and scans its barcode to identify the product.</string>
+	<string>SuppBuddy photographs the supplement label and scans its barcode to identify the product.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>SupPal sends test readings to the SupPal server running on your local network.</string>
+	<string>SuppBuddy sends test readings to the SuppBuddy server running on your local network.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>SupPal saves report cards you choose to save to your photo library.</string>
+	<string>SuppBuddy saves report cards you choose to save to your photo library.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

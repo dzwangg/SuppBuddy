@@ -28,16 +28,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: App logic self-check
         run: |
-          swiftc SupPal/Analysis.swift SupPal/Server.swift SupPal/NIH.swift checks/main.swift -o "$RUNNER_TEMP/suppal-check"
-          "$RUNNER_TEMP/suppal-check"
+          swiftc SuppBuddy/Analysis.swift SuppBuddy/Server.swift SuppBuddy/NIH.swift checks/main.swift -o "$RUNNER_TEMP/suppbuddy-check"
+          "$RUNNER_TEMP/suppbuddy-check"
       - name: Type-check the whole app (iPhone and Simulator)
         run: |
-          xcrun --sdk iphoneos swiftc -typecheck -target arm64-apple-ios17.0 -swift-version 5 SupPal/*.swift
-          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator -swift-version 5 SupPal/*.swift
+          xcrun --sdk iphoneos swiftc -typecheck -target arm64-apple-ios17.0 -swift-version 5 SuppBuddy/*.swift
+          xcrun --sdk iphonesimulator swiftc -typecheck -target arm64-apple-ios17.0-simulator -swift-version 5 SuppBuddy/*.swift
       - name: Compile the asset catalog (app icon)
         run: |
           mkdir -p "$RUNNER_TEMP/assets"
-          xcrun actool SupPal/Assets.xcassets --compile "$RUNNER_TEMP/assets" --platform iphoneos \
+          xcrun actool SuppBuddy/Assets.xcassets --compile "$RUNNER_TEMP/assets" --platform iphoneos \
             --minimum-deployment-target 17.0 --app-icon AppIcon --target-device iphone \
             --output-partial-info-plist "$RUNNER_TEMP/assets/partial.plist" --errors --warnings
           grep -q AppIcon "$RUNNER_TEMP/assets/partial.plist"
@@ -56,4 +56,4 @@ jobs:
       - name: Build the tester firmware
         run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware/SupplementOpticalTester
       - name: Build the fake-data stub
-        run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware-stub/suppal_stub
+        run: arduino-cli compile --fqbn esp32:esp32:esp32 firmware/suppbuddy_stub
