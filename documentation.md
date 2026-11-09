@@ -118,11 +118,10 @@ The same document also has the V1 and V2 Part Studios. Every dimension, iteratio
 
 ### Print It Yourself
 
-Download the V3 STL files (millimetres, exported from Onshape):
+Download the V3 STL files from [hardware/stl/](hardware/stl/) (millimetres, exported from Onshape):
 
 | Part | File |
 |---|---|
-| All three parts | [suppbuddy-v3-stl.zip](hardware/stl/suppbuddy-v3-stl.zip) |
 | Base | [suppbuddy-v3-base.stl](hardware/stl/suppbuddy-v3-base.stl) |
 | Lid | [suppbuddy-v3-lid.stl](hardware/stl/suppbuddy-v3-lid.stl) |
 | Vial cap sleeve | [suppbuddy-v3-sleeve.stl](hardware/stl/suppbuddy-v3-sleeve.stl) |
