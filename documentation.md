@@ -84,11 +84,11 @@ most. Reports say "consistent with N scans", never "verified".
 
 ### CAD Model
 
-The enclosure was designed in Onshape over three iterations and printed in dark filament so that room light
+The enclosure was designed in Onshape over four iterations and printed in dark filament so that room light
 can't reach the sensors.
 
 <p align="center">
-  <img src="hardware/cad/render/out/hero.png" alt="SuppBuddy V3 render" width="600"/>
+  <img src="hardware/cad/render/out/hero.png" alt="Render of the SuppBuddy enclosure" width="600"/>
 </p>
 
 | Version | What changed |
@@ -96,41 +96,46 @@ can't reach the sensors.
 | **V1** | A box built around a standard cuvette, with the LEDs and sensors around it |
 | **V2** | Heat-set M3 inserts, a light seal around the LCD, a light wall between the electronics and the optics, and a rounded cap |
 | **V3** | Switched to a 20 mL SKS vial with a printed cap sleeve. The LEDs sit in a vertical column so every beam crosses the vial's full diameter, and the sensors slide into dedicated pockets |
+| **V4** | Swapped the two light sensors: the TCS34725 color sensor now sits in line with the beam and the TSL2591 at 90°, as the firmware expects. Everything else is the same as V3 |
 
 <p align="center">
   <img src="hardware/cad/render/out/exploded.png" alt="Exploded view: sleeve, lid and base" width="420"/>
   <img src="hardware/cad/render/out/cutaway.png" alt="Cutaway through the optics" width="420"/>
+  <br/>
+  <i>These renders show V3. In V4 the two sensor boards trade places.</i>
 </p>
 
-V3 has three printed parts:
+V4 has three printed parts:
 
 - **Base** (92 × 128.5 mm): an electronics bay for the breadboard and ESP32 with a USB-C opening, a light wall,
   and an optics block holding the vial bore, the LED column, and two sensor windows with slide-in board
-  pockets (one in line with the beam and one at 90°). Four corner posts take M3 heat-set inserts.
+  pockets (the TCS34725 in line with the beam, the TSL2591 at 90°). Four corner posts take M3 heat-set inserts.
 - **Lid:** a 2 mm plate with a window for the 16×2 LCD and a light seal underneath it.
 - **Cap sleeve:** presses onto the vial's white cap. When the vial is seated, its skirt hangs over a collar on
   the base and blocks out light. Lift the sleeve to pull the vial out.
 
-The V3 model is a normal, fully dimensioned Onshape feature tree with variables for the fits and for the
-sizes worth measuring before printing. **[Open the V3 CAD in Onshape](https://cad.onshape.com/documents/ada0757f8a367ed8c935f14f/w/389f688fe28c85a3add01f94/e/45284f49e09add42eb3ea0fc)**.
-The same document also has the V1 and V2 Part Studios. Every dimension, iteration and part is documented in
+The V4 model is a normal, fully dimensioned Onshape feature tree with variables for the fits and for the
+sizes worth measuring before printing. **[Open the V4 CAD in Onshape](https://cad.onshape.com/documents/ada0757f8a367ed8c935f14f/w/389f688fe28c85a3add01f94/e/c06c4d7c73464dca6e8612d1)**.
+The same document also has the V1, V2 and V3 Part Studios. Every dimension, iteration and part is documented in
 [hardware/details.md](hardware/details.md), and the CAD scripts are in [hardware/cad/](hardware/cad/).
 
 ### Print It Yourself
 
-Download the V3 STL files from [hardware/stl/](hardware/stl/) (millimetres, exported from Onshape):
+Download the V4 STL files from [hardware/stl/](hardware/stl/) (millimetres, exported from Onshape):
 
 | Part | File |
 |---|---|
-| Base | [suppbuddy-v3-base.stl](hardware/stl/suppbuddy-v3-base.stl) |
-| Lid | [suppbuddy-v3-lid.stl](hardware/stl/suppbuddy-v3-lid.stl) |
-| Vial cap sleeve | [suppbuddy-v3-sleeve.stl](hardware/stl/suppbuddy-v3-sleeve.stl) |
+| Base | [suppbuddy-v4-base.stl](hardware/stl/suppbuddy-v4-base.stl) |
+| Lid | [suppbuddy-v4-lid.stl](hardware/stl/suppbuddy-v4-lid.stl) |
+| Vial cap sleeve | [suppbuddy-v4-sleeve.stl](hardware/stl/suppbuddy-v4-sleeve.stl) |
 
 - Use **black or dark filament** so room light can't leak in. No supports are needed.
 - Print the base floor-down, and the lid and sleeve upside down.
 - Print the sleeve first and check its press fit on your vial's cap before printing the rest.
 - The parts fit an SKS 20 mL PET vial (⌀27.4 mm body). For a different vial, change the fit variables in the
   Onshape model and re-export.
+- The V3 files are still in the same folder. Only the base differs: a V3 base holds the two sensors the
+  other way round.
 
 <p align="center">
   <img src="assets/build-inside.jpg" alt="The printed enclosure with the electronics inside" width="420"/>
