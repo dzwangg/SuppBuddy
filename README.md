@@ -49,8 +49,8 @@ Inspired by Peel, the HackMIT-winning at-home medical testing device.
 ## Learn more
 
 - **[Technical documentation](documentation.md):** how it works, the hardware, the science and how to run it.
-- **[CAD model in Onshape](https://cad.onshape.com/documents/ada0757f8a367ed8c935f14f/w/389f688fe28c85a3add01f94/e/45284f49e09add42eb3ea0fc)**
-- **Print your own:** [download the STL files](hardware/stl/) (printing tips in the [documentation](documentation.md#print-it-yourself))
+- **[CAD model in Onshape](https://cad.onshape.com/documents/ada0757f8a367ed8c935f14f/w/389f688fe28c85a3add01f94/e/c06c4d7c73464dca6e8612d1)**
+- **Print your own:** [download the V4 STL files](hardware/stl/) (printing tips in the [documentation](documentation.md#print-it-yourself))
 - **Pitch deck:** [PDF](assets/SuppBuddy.pdf) · [PowerPoint](assets/SuppBuddy.pptx)
 
 > SuppBuddy is a screening tool, not a certified lab test or medical advice.
